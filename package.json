@@ -40,10 +40,10 @@
     "yargs": "^8.0.2"
   },
   "devDependencies": {
-    "nyc": "^10.3.2",
-    "standard": "^9.0.2",
-    "standard-version": "^4.0.0",
-    "tap": "^10.3.2",
+    "nyc": "^11.0.3",
+    "standard": "^10.0.2",
+    "standard-version": "^4.2.0",
+    "tap": "^10.7.0",
     "weallbehave": "^1.2.0",
     "weallcontribute": "^1.0.8"
   },

@@ -42,7 +42,7 @@ function parseArgs () {
 function main () {
   const startTime = Date.now()
   workers = workerFarm({
-    maxConcurrentCallsPerWorker: 20,
+    maxConcurrentCallsPerWorker: 30,
     maxRetries: 1
   }, WORKER_PATH)
   return BB.join(
@@ -54,8 +54,8 @@ function main () {
       return pkg
     }
   ).tap(pkg => {
-    if (!pkg._shrinkwrap) {
-      throw new Error(`cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json. Run an install with npm@5 or later to generate it, then try again.`)
+    if (!pkg._shrinkwrap || !pkg._shrinkwrap.lockfileVersion) {
+      throw new Error(`cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.`)
     }
 
     return rimraf('./node_modules')
@@ -86,7 +86,7 @@ function runScript (script, pkg, pkgPath) {
 }
 
 function extractDeps (modPath, deps) {
-  return BB.map(Object.keys(deps || {}), (name) => {
+  return BB.map(Object.keys(deps || {}), name => {
     const child = deps[name]
     const childPath = path.join(modPath, name)
     return (
@@ -117,7 +117,7 @@ function extractDeps (modPath, deps) {
     }).tap(full => {
       return runScript('postinstall', full.package, childPath)
     })
-  })
+  }, {concurrency: 50})
 }
 
 function extractChild (name, child, childPath) {

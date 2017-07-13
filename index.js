@@ -98,7 +98,7 @@ function extractDeps (modPath, deps) {
     }).tap(pkg => {
       return runScript('preinstall', pkg, childPath)
     }).then(pkg => {
-      return extractDeps(path.join(childPath, 'node_modules'))
+      return extractDeps(path.join(childPath, 'node_modules'), child.dependencies)
       .then(dependencies => {
         return {
           name,

@@ -1,8 +1,9 @@
 {
   "name": "cipm",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "standalone ci-oriented package installer for npm",
   "main": "index.js",
+  "bin": "index.js",
   "files": [
     "*.js"
   ],

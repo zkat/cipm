@@ -29,7 +29,7 @@
     "email": "kzm@sykosomatic.org",
     "twitter": "maybekatz"
   },
-  "license": "CC0-1.0",
+  "license": "MIT",
   "dependencies": {
     "bluebird": "^3.5.0",
     "graceful-fs": "^4.1.11",

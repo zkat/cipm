@@ -34,7 +34,7 @@ Please file any relevant issues [on Github.](https://github.com/zkat/cipm)
 
 ## LICENSE
 
-This work is released by its authors into the public domain under CC0-1.0. See `LICENSE.md` for details.
+This work is released under the conditions of the MIT license. See LICENSE.md for more details.
 
 ## SEE ALSO
 

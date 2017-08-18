@@ -9,8 +9,11 @@ const fs = BB.promisifyAll(require('graceful-fs'))
 const npa = require('npm-package-arg')
 const path = require('path')
 const rimraf = BB.promisify(require('rimraf'))
+const spawn = require('child_process').spawn
 const workerFarm = require('worker-farm')
 const yargs = require('yargs')
+const lifecycle = require('npm-lifecycle')
+const log = require('npmlog')
 
 const WORKER_PATH = require.resolve('./worker.js')
 let workers
@@ -39,6 +42,36 @@ function parseArgs () {
     describe: 'path to npmrc'
   })
   .argv
+}
+
+function readConfig () {
+  return new BB((resolve, reject) => {
+    const child = spawn('npm', ['config', 'ls', '--json'], {
+      env: process.env,
+      cwd: process.cwd(),
+      stdio: 'inherit'
+    })
+
+    let stdout
+    if (child.stdout) {
+      child.stdout.on('data', function (chunk) {
+        stdout += chunk
+      })
+    }
+
+    child.on(err, reject)
+    child.on('close', function (code) {
+      if (code === 127) {
+        reject(new Error('npm command not found'))
+      } else {
+        try {
+          resolve(JSON.parse(stdout))
+        } catch (e) {
+          reject(new Error('`npm config ls --json` failed to output json'))
+        }
+      }
+    })
+  })
 }
 
 function main () {
@@ -80,8 +113,18 @@ function main () {
   })
 }
 
-function runScript (script, pkg, pkgPath) {
-  if (pkg.scripts && pkg.scripts[script]) {
+let _config
+function getConfig() {
+  if (_config) return BB.resolve(_config)
+  return readConfig().then(config => {
+    _config = config
+    _config.log = log
+  })
+}
+
+function runScript (stage, pkg, pkgPath) {
+  if (pkg.scripts && pkg.scripts[stage]) {
+    return getConfig().then(config => lifecycle(pkg, stage, pkgPath, config))
     console.log('executing', script, 'on', pkgPath)
   }
   return BB.resolve()

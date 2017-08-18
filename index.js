@@ -1,89 +1,29 @@
-#!/usr/bin/env node
-
 'use strict'
 
 const BB = require('bluebird')
 
-const extractionWorker = require('./worker.js')
+const config = require('./lib/config.js')
+const extract = require('./lib/extract.js')
 const fs = BB.promisifyAll(require('graceful-fs'))
-const npa = require('npm-package-arg')
 const path = require('path')
 const rimraf = BB.promisify(require('rimraf'))
-const spawn = require('child_process').spawn
-const workerFarm = require('worker-farm')
-const yargs = require('yargs')
 const lifecycle = require('npm-lifecycle')
-const log = require('npmlog')
 
-const WORKER_PATH = require.resolve('./worker.js')
-let workers
+module.exports = main
 
-main(parseArgs())
+let pkgCount
 
-let pkgCount = 0
-
-function parseArgs () {
-  return yargs
-  .option('loglevel', {
-    type: 'string',
-    describe: 'log level for npmlog',
-    default: 'notice'
-  })
-  .option('offline', {
-    type: 'boolean',
-    describe: 'force cipm to run offline, or error'
-  })
-  .option('ignore-scripts', {
-    type: 'boolean',
-    describe: 'skip running lifecycle scripts'
-  })
-  .option('userconfig', {
-    type: 'string',
-    describe: 'path to npmrc'
-  })
-  .argv
-}
-
-function readConfig () {
-  return new BB((resolve, reject) => {
-    const child = spawn('npm', ['config', 'ls', '--json'], {
-      env: process.env,
-      cwd: process.cwd(),
-      stdio: 'inherit'
-    })
-
-    let stdout
-    if (child.stdout) {
-      child.stdout.on('data', function (chunk) {
-        stdout += chunk
-      })
-    }
-
-    child.on(err, reject)
-    child.on('close', function (code) {
-      if (code === 127) {
-        reject(new Error('npm command not found'))
-      } else {
-        try {
-          resolve(JSON.parse(stdout))
-        } catch (e) {
-          reject(new Error('`npm config ls --json` failed to output json'))
-        }
-      }
-    })
-  })
-}
-
-function main () {
+function main ({ prefix = '.' }) {
   const startTime = Date.now()
-  workers = workerFarm({
-    maxConcurrentCallsPerWorker: 30,
-    maxRetries: 1
-  }, WORKER_PATH)
+  const nodeModulesPath = path.join(prefix, 'node_modules')
+  pkgCount = 0
+
+  extract.startWorkers()
+
   return BB.join(
-    readJson('.', 'package.json'),
-    readJson('.', 'package-lock.json', true),
-    readJson('.', 'npm-shrinkwrap.json', true),
+    readJson(prefix, 'package.json'),
+    readJson(prefix, 'package-lock.json', true),
+    readJson(prefix, 'npm-shrinkwrap.json', true),
     (pkg, lock, shrink) => {
       pkg._shrinkwrap = lock || shrink
       return pkg
@@ -93,39 +33,30 @@ function main () {
       throw new Error(`cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.`)
     }
 
-    return rimraf('./node_modules')
+    return rimraf(nodeModulesPath)
   }).tap(pkg => {
-    return runScript('preinstall', pkg, '.')
+    return runScript('preinstall', pkg, prefix)
   }).tap(pkg => {
     return extractDeps(
-      `./node_modules`,
+      nodeModulesPath,
       pkg._shrinkwrap.dependencies
     )
   }).tap(pkg => {
-    return runScript('install', pkg, '.')
+    return runScript('install', pkg, prefix)
   }).tap(pkg => {
-    return runScript('postinstall', pkg, '.')
+    return runScript('postinstall', pkg, prefix)
   }).then(pkg => {
-    workerFarm.end(workers)
-    console.log(`added ${pkgCount} packages in ${
-      (Date.now() - startTime) / 1000
-    }s.`)
-  })
-}
-
-let _config
-function getConfig() {
-  if (_config) return BB.resolve(_config)
-  return readConfig().then(config => {
-    _config = config
-    _config.log = log
+    extract.stopWorkers()
+    return {
+      count: pkgCount,
+      time: Date.now() - startTime
+    }
   })
 }
 
 function runScript (stage, pkg, pkgPath) {
   if (pkg.scripts && pkg.scripts[stage]) {
-    return getConfig().then(config => lifecycle(pkg, stage, pkgPath, config))
-    console.log('executing', script, 'on', pkgPath)
+    return config().then(config => lifecycle(pkg, stage, pkgPath, config))
   }
   return BB.resolve()
 }
@@ -134,11 +65,8 @@ function extractDeps (modPath, deps) {
   return BB.map(Object.keys(deps || {}), name => {
     const child = deps[name]
     const childPath = path.join(modPath, name)
-    return (
-      child.bundled
-      ? BB.resolve()
-      : extractChild(name, child, childPath)
-    ).then(() => {
+    return extract.child(name, child, childPath)
+    .then(() => {
       return readJson(childPath, 'package.json')
     }).tap(pkg => {
       return runScript('preinstall', pkg, childPath)
@@ -163,30 +91,6 @@ function extractDeps (modPath, deps) {
       return runScript('postinstall', full.package, childPath)
     })
   }, {concurrency: 50})
-}
-
-function extractChild (name, child, childPath) {
-  const spec = npa.resolve(name, child.resolved || child.version)
-  const opts = {
-    cache: path.resolve(process.env.HOME, '.npm/_cacache'),
-    integrity: child.integrity
-  }
-  const args = [spec, childPath, opts]
-  return BB.fromNode((cb) => {
-    let launcher = extractionWorker
-    let msg = args
-    const spec = typeof args[0] === 'string' ? npa(args[0]) : args[0]
-    if (spec.registry || spec.type === 'remote') {
-      // workers will run things in parallel!
-      launcher = workers
-      try {
-        msg = JSON.stringify(msg)
-      } catch (e) {
-        return cb(e)
-      }
-    }
-    launcher(msg, cb)
-  })
 }
 
 function readJson (jsonPath, name, ignoreMissing) {

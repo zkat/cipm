@@ -5,7 +5,9 @@
   "main": "index.js",
   "bin": "bin/cli.js",
   "files": [
-    "*.js"
+    "*.js",
+    "bin",
+    "lib"
   ],
   "scripts": {
     "docs": "tail -n +2 README.md | marked-man --manual 'User Commands' --version \"$npm_package_name@$npm_package_version\" > $npm_package_name.1",

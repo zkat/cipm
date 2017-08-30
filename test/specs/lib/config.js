@@ -5,6 +5,8 @@ const requireInject = require('require-inject')
 const npmlog = require('npmlog')
 const childProcessFactory = require('../../lib/childProcessFactory.js')
 
+const dir = 'dir'
+
 let child
 const config = requireInject('../../../lib/config.js', {
   child_process: {
@@ -20,7 +22,7 @@ function cleanup () {
 test('config: errors if npm is not found', t => {
   cleanup()
 
-  config().catch(err => {
+  config(dir).catch(err => {
     t.equal(err.message, '`npm` command not found. Please ensure you have npm@5.4.0 or later installed.')
     t.end()
   })
@@ -31,7 +33,7 @@ test('config: errors if npm is not found', t => {
 test('config: errors if npm config ls --json cant output json', t => {
   cleanup()
 
-  config().catch(err => {
+  config(dir).catch(err => {
     t.equal(err.message, '`npm config ls --json` failed to output json. Please ensure you have npm@5.4.0 or later installed.')
     t.end()
   })
@@ -47,7 +49,7 @@ test('config: errors if npm errors for any reason', t => {
 
   const errorMessage = 'failed to reticulate splines'
 
-  config().catch(err => {
+  config(dir).catch(err => {
     t.equal(err, errorMessage)
     t.end()
   })
@@ -60,9 +62,11 @@ test('config: parses configs from npm', t => {
 
   const expectedConfig = { a: 1, b: 2 }
 
-  config().then(config => {
-    expectedConfig.log = npmlog
-    t.same(config, expectedConfig)
+  config(dir).then(config => {
+    t.same(config.config.a, expectedConfig.a)
+    t.same(config.config.b, expectedConfig.b)
+    t.same(config.dir, dir)
+    t.same(config.log, npmlog)
     t.end()
   })
 

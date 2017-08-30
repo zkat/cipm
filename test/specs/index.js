@@ -4,24 +4,23 @@ const test = require('tap').test
 const requireInject = require('require-inject')
 const fixtureHelper = require('../lib/fixtureHelper.js')
 
-let config = {}
 let extract = () => {}
-const dir = 'index'
+const pkgName = 'hark-a-package'
+const pkgVersion = '1.0.0'
+const writeEnvScript = 'node -e \'const fs = require("fs"); fs.writeFileSync(process.cwd() + "/" + process.env.npm_lifecycle_event, process.env.npm_lifecycle_event);\''
+
 const main = requireInject('../../index.js', {
-  '../../lib/config': () => {
-    return config
-  },
   '../../lib/extract': {
     startWorkers () {},
     stopWorkers () {},
-    child (...args) {
-      return extract(...args)
+    child () {
+      return extract.apply(null, arguments)
     }
   }
 })
 
 test('throws error when no package.json is found', t => {
-  const prefix = fixtureHelper.write(dir, {
+  const prefix = fixtureHelper.write(pkgName, {
     'index.js': 'var a = 1;'
   })
 
@@ -34,8 +33,11 @@ test('throws error when no package.json is found', t => {
 })
 
 test('throws error when no package-lock nor shrinkwrap is found', t => {
-  const prefix = fixtureHelper.write(dir, {
-    'package.json': {}
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion
+    }
   })
 
   main({ prefix: prefix }).catch(err => {
@@ -47,8 +49,11 @@ test('throws error when no package-lock nor shrinkwrap is found', t => {
 })
 
 test('throws error when old shrinkwrap is found', t => {
-  const prefix = fixtureHelper.write(dir, {
-    'package.json': {},
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion
+    },
     'npm-shrinkwrap.json': {}
   })
 
@@ -61,8 +66,11 @@ test('throws error when old shrinkwrap is found', t => {
 })
 
 test('handles empty dependency list', t => {
-  const prefix = fixtureHelper.write(dir, {
-    'package.json': {},
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion
+    },
     'package-lock.json': {
       dependencies: {},
       lockfileVersion: 1
@@ -78,8 +86,11 @@ test('handles empty dependency list', t => {
 })
 
 test('handles dependency list with only shallow subdeps', t => {
-  const prefix = fixtureHelper.write(dir, {
-    'package.json': {},
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion
+    },
     'package-lock.json': {
       dependencies: {
         a: {}
@@ -90,9 +101,12 @@ test('handles dependency list with only shallow subdeps', t => {
 
   const aContents = 'var a = 1;'
 
-  extract = fixtureHelper.getWriter(dir, {
+  extract = fixtureHelper.getWriter(pkgName, {
     '/node_modules/a': {
-      'package.json': {},
+      'package.json': {
+        name: pkgName,
+        version: pkgVersion
+      },
       'index.js': aContents
     }
   })
@@ -107,8 +121,11 @@ test('handles dependency list with only shallow subdeps', t => {
 })
 
 test('handles dependency list with only deep subdeps', t => {
-  const prefix = fixtureHelper.write(dir, {
-    'package.json': {},
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion
+    },
     'package-lock.json': {
       dependencies: {
         a: {
@@ -124,13 +141,19 @@ test('handles dependency list with only deep subdeps', t => {
   const aContents = 'var a = 1;'
   const bContents = 'var b = 2;'
 
-  extract = fixtureHelper.getWriter(dir, {
+  extract = fixtureHelper.getWriter(pkgName, {
     '/node_modules/a': {
-      'package.json': {},
+      'package.json': {
+        name: pkgName,
+        version: pkgVersion
+      },
       'index.js': aContents
     },
     '/node_modules/a/node_modules/b': {
-      'package.json': {},
+      'package.json': {
+        name: pkgName,
+        version: pkgVersion
+      },
       'index.js': bContents
     }
   })
@@ -141,6 +164,57 @@ test('handles dependency list with only deep subdeps', t => {
     t.ok(fixtureHelper.equals(prefix + '/node_modules/a/node_modules/b', 'index.js', bContents))
 
     fixtureHelper.teardown()
+    t.end()
+  })
+})
+
+test('runs lifecycle hooks of packages with env variables', t => {
+  const originalConsoleLog = console.log
+  console.log = () => {}
+
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion,
+      scripts: {
+        preinstall: writeEnvScript,
+        install: writeEnvScript,
+        postinstall: writeEnvScript
+      }
+    },
+    'package-lock.json': {
+      dependencies: {
+        a: {}
+      },
+      lockfileVersion: 1
+    }
+  })
+
+  extract = fixtureHelper.getWriter(pkgName, {
+    '/node_modules/a': {
+      'package.json': {
+        name: 'a',
+        version: '1.0.0',
+        scripts: {
+          preinstall: writeEnvScript,
+          install: writeEnvScript,
+          postinstall: writeEnvScript
+        }
+      }
+    }
+  })
+
+  main({ prefix: prefix }).then(details => {
+    t.equal(details.count, 1)
+    t.ok(fixtureHelper.equals(prefix, 'preinstall', 'preinstall'))
+    t.ok(fixtureHelper.equals(prefix, 'install', 'install'))
+    t.ok(fixtureHelper.equals(prefix, 'postinstall', 'postinstall'))
+    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'preinstall', 'preinstall'))
+    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'install', 'install'))
+    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'postinstall', 'postinstall'))
+
+    fixtureHelper.teardown()
+    console.log = originalConsoleLog
     t.end()
   })
 })

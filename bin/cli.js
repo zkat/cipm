@@ -13,6 +13,7 @@ main(parseArgs()).then((details) => {
 
 function parseArgs () {
   return yargs
+  .usage('Install dependencies from an existing package-lock.json')
   .option('loglevel', {
     type: 'string',
     describe: 'log level for npmlog',
@@ -34,5 +35,7 @@ function parseArgs () {
     type: 'string',
     describe: 'path to npmrc'
   })
+  .help()
+  .alias('h', 'help')
   .argv
 }

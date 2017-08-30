@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.1.1"></a>
+## [0.1.1](https://github.com/zkat/cipm/compare/v0.1.0...v0.1.1) (2017-08-30)
+
+
+### Bug Fixes
+
+* **files:** oops. forgot to include new files in tarball ([1ee85c9](https://github.com/zkat/cipm/commit/1ee85c9))
+
+
+
 <a name="0.1.0"></a>
 # 0.1.0 (2017-08-30)
 

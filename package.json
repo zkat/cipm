@@ -3,7 +3,7 @@
   "version": "0.0.2",
   "description": "standalone ci-oriented package installer for npm",
   "main": "index.js",
-  "bin": "index.js",
+  "bin": "bin/cli.js",
   "files": [
     "*.js"
   ],
@@ -13,7 +13,7 @@
     "postrelease": "npm publish && git push --follow-tags",
     "pretest": "standard",
     "release": "standard-version -s",
-    "test": "tap -J --coverage test/*.js",
+    "test": "tap -J --coverage test/specs",
     "update-coc": "weallbehave -o . && git add CODE_OF_CONDUCT.md && git commit -m 'docs(coc): updated CODE_OF_CONDUCT.md'",
     "update-contrib": "weallcontribute -o . && git add CONTRIBUTING.md && git commit -m 'docs(contributing): updated CONTRIBUTING.md'"
   },
@@ -33,6 +33,7 @@
   "dependencies": {
     "bluebird": "^3.5.0",
     "graceful-fs": "^4.1.11",
+    "npm-lifecycle": "^1.0.0",
     "npm-package-arg": "^5.1.2",
     "npmlog": "^4.1.2",
     "pacote": "^4.0.0",
@@ -41,7 +42,9 @@
     "yargs": "^8.0.2"
   },
   "devDependencies": {
+    "mkdirp": "^0.5.1",
     "nyc": "^11.0.3",
+    "require-inject": "^1.4.2",
     "standard": "^10.0.2",
     "standard-version": "^4.2.0",
     "tap": "^10.7.0",

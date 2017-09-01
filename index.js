@@ -12,7 +12,7 @@ const lifecycle = require('npm-lifecycle')
 module.exports = main
 
 function main (opts) {
-  let prefix = path.resolve(opts.prefix)
+  let prefix = path.resolve(opts.prefix || '.')
 
   const startTime = Date.now()
   const nodeModulesPath = path.join(prefix, 'node_modules')

@@ -9,7 +9,7 @@ const pkgName = 'hark-a-package'
 const pkgVersion = '1.0.0'
 const writeEnvScript = 'node -e \'const fs = require("fs"); fs.writeFileSync(process.cwd() + "/" + process.env.npm_lifecycle_event, process.env.npm_lifecycle_event);\''
 
-const main = requireInject('../../index.js', {
+const Installer = requireInject('../../index.js', {
   '../../lib/extract': {
     startWorkers () {},
     stopWorkers () {},
@@ -24,7 +24,7 @@ test('throws error when no package.json is found', t => {
     'index.js': 'var a = 1;'
   })
 
-  main({ prefix: prefix }).catch(err => {
+  new Installer({prefix}).run().catch(err => {
     t.equal(err.code, 'ENOENT')
 
     fixtureHelper.teardown()
@@ -40,7 +40,7 @@ test('throws error when no package-lock nor shrinkwrap is found', t => {
     }
   })
 
-  main({ prefix: prefix }).catch(err => {
+  new Installer({prefix}).run().catch(err => {
     t.equal(err.message, 'cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.')
 
     fixtureHelper.teardown()
@@ -57,7 +57,7 @@ test('throws error when old shrinkwrap is found', t => {
     'npm-shrinkwrap.json': {}
   })
 
-  main({ prefix: prefix }).catch(err => {
+  new Installer({prefix}).run().catch(err => {
     t.equal(err.message, 'cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.')
 
     fixtureHelper.teardown()
@@ -77,8 +77,8 @@ test('handles empty dependency list', t => {
     }
   })
 
-  main({ prefix: prefix }).then(details => {
-    t.equal(details.count, 0)
+  new Installer({prefix}).run().then(details => {
+    t.equal(details.pkgCount, 0)
 
     fixtureHelper.teardown()
     t.end()
@@ -111,8 +111,8 @@ test('handles dependency list with only shallow subdeps', t => {
     }
   })
 
-  main({ prefix: prefix }).then(details => {
-    t.equal(details.count, 1)
+  new Installer({prefix}).run().then(details => {
+    t.equal(details.pkgCount, 1)
     t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'index.js', aContents))
 
     fixtureHelper.teardown()
@@ -158,8 +158,8 @@ test('handles dependency list with only deep subdeps', t => {
     }
   })
 
-  main({ prefix: prefix }).then(details => {
-    t.equal(details.count, 2)
+  new Installer({prefix}).run().then(details => {
+    t.equal(details.pkgCount, 2)
     t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'index.js', aContents))
     t.ok(fixtureHelper.equals(prefix + '/node_modules/a/node_modules/b', 'index.js', bContents))
 
@@ -204,8 +204,8 @@ test('runs lifecycle hooks of packages with env variables', t => {
     }
   })
 
-  main({ prefix: prefix }).then(details => {
-    t.equal(details.count, 1)
+  new Installer({prefix}).run().then(details => {
+    t.equal(details.pkgCount, 1)
     t.ok(fixtureHelper.equals(prefix, 'preinstall', 'preinstall'))
     t.ok(fixtureHelper.equals(prefix, 'install', 'install'))
     t.ok(fixtureHelper.equals(prefix, 'postinstall', 'postinstall'))

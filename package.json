@@ -35,6 +35,7 @@
   "dependencies": {
     "bluebird": "^3.5.0",
     "graceful-fs": "^4.1.11",
+    "lock-verify": "^1.1.0",
     "npm-lifecycle": "^1.0.0",
     "npm-package-arg": "^5.1.2",
     "npmlog": "^4.1.2",

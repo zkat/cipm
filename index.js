@@ -8,6 +8,7 @@ const fs = BB.promisifyAll(require('graceful-fs'))
 const path = require('path')
 const rimraf = BB.promisify(require('rimraf'))
 const lifecycle = require('npm-lifecycle')
+const lockVerify = require('lock-verify')
 
 module.exports = main
 
@@ -32,7 +33,20 @@ function main (opts) {
     if (!pkg._shrinkwrap || !pkg._shrinkwrap.lockfileVersion) {
       throw new Error(`cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.`)
     }
-
+    return lockVerify(prefix).then(result => {
+      if (result.status) {
+        result.warnings.forEach(w => console.error('Warning:', w))
+      } else {
+        throw new Error(
+          'cipm can only install packages when your package.json and package-lock.json or ' +
+          'npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` ' +
+          'before continuing.\n\n' +
+          result.warnings.map(w => 'Warning: ' + w).join('\n') + '\n' +
+          result.errors.join('\n') + '\n'
+        )
+      }
+    })
+  }).tap(pkg => {
     return rimraf(nodeModulesPath)
   }).tap(pkg => {
     return runScript('preinstall', pkg, prefix)

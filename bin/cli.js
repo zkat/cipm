@@ -3,12 +3,14 @@
 'use strict'
 
 const yargs = require('yargs')
-const main = require('../index.js')
+const Installer = require('../index.js')
 
-main(parseArgs()).then((details) => {
-  console.log(`added ${details.count} packages in ${
-    details.time / 1000
+new Installer(parseArgs()).run().then(details => {
+  console.error(`added ${details.pkgCount} packages in ${
+    details.runTime / 1000
   }s.`)
+}, err => {
+  console.error(`Error!\n${err.message}`)
 })
 
 function parseArgs () {

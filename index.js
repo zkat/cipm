@@ -124,7 +124,7 @@ class Installer {
   }
 
   runScript (stage, pkg, pkgPath) {
-    if (pkg.scripts && pkg.scripts[stage]) {
+    if (!this.opts.ignoreScripts && pkg.scripts && pkg.scripts[stage]) {
       // TODO(mikesherov): remove pkg._id when npm-lifecycle no longer relies on it
       pkg._id = pkg.name + '@' + pkg.version
       return config(this.prefix).then(config => {

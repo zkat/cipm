@@ -48,6 +48,28 @@ test('throws error when no package-lock nor shrinkwrap is found', t => {
   })
 })
 
+test('throws error when package.json and package-lock.json do not match', t => {
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: { a: '1' }, // should generate error
+      optionalDependencies: { b: '2' } // should generate warning
+    },
+    'package-lock.json': {
+      version: pkgVersion + '-0',
+      dependencies: {},
+      lockfileVersion: 1
+    }
+  })
+
+  new Installer({prefix}).run().catch(err => {
+    t.match(err.message, 'cipm can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync')
+    fixtureHelper.teardown()
+    t.end()
+  })
+})
+
 test('throws error when old shrinkwrap is found', t => {
   const prefix = fixtureHelper.write(pkgName, {
     'package.json': {

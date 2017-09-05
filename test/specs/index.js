@@ -311,6 +311,6 @@ test('handles JSON docs that contain a BOM', t => {
   }
   // ensure that the file does indeed fail to be parsed by JSON.parse
   t.throws(() => JSON.parse(fs.readFileSync(path.join(bomJSONDir, bomJSON), 'utf8')),
-           {message: 'Unexpected token \uFEFF in JSON at position 0'})
+           {message: 'Unexpected token \uFEFF'})
   return Installer._readJson(bomJSONDir, bomJSON).then(obj => t.match(obj, actualJSON))
 })

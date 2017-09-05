@@ -240,3 +240,58 @@ test('runs lifecycle hooks of packages with env variables', t => {
     t.end()
   })
 })
+
+test('skips lifecycle scripts with ignoreScripts is set', t => {
+  const originalConsoleLog = console.log
+  console.log = () => {}
+
+  const prefix = fixtureHelper.write(pkgName, {
+    'package.json': {
+      name: pkgName,
+      version: pkgVersion,
+      scripts: {
+        preinstall: writeEnvScript,
+        install: writeEnvScript,
+        postinstall: writeEnvScript
+      }
+    },
+    'package-lock.json': {
+      dependencies: {
+        a: {}
+      },
+      lockfileVersion: 1
+    }
+  })
+  const opts = {
+    ignoreScripts: true,
+    prefix: prefix
+  }
+
+  extract = fixtureHelper.getWriter(pkgName, {
+    '/node_modules/a': {
+      'package.json': {
+        name: 'a',
+        version: '1.0.0',
+        scripts: {
+          preinstall: writeEnvScript,
+          install: writeEnvScript,
+          postinstall: writeEnvScript
+        }
+      }
+    }
+  })
+
+  new Installer(opts).run().then(details => {
+    t.equal(details.pkgCount, 1)
+    t.ok(fixtureHelper.missing(prefix, 'preinstall'))
+    t.ok(fixtureHelper.missing(prefix, 'install'))
+    t.ok(fixtureHelper.missing(prefix, 'postinstall'))
+    t.ok(fixtureHelper.missing(prefix + '/node_modules/a', 'preinstall'))
+    t.ok(fixtureHelper.missing(prefix + '/node_modules/a', 'install'))
+    t.ok(fixtureHelper.missing(prefix + '/node_modules/a', 'postinstall'))
+
+    fixtureHelper.teardown()
+    console.log = originalConsoleLog
+    t.end()
+  })
+})

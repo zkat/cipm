@@ -44,6 +44,14 @@ module.exports = {
 
     return expected === fs.readFileSync(resolve(path, name)).toString()
   },
+  missing (dir, name) {
+    const path = getPath(dir)
+    try {
+      return !fs.accessSync(resolve(path, name))
+    } catch (e) {
+      return e.code === 'ENOENT'
+    }
+  },
   teardown () {
     rimraf.sync(getPath(''))
   },

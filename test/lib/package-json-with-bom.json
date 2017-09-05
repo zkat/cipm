@@ -1,0 +1,6 @@
+﻿{
+  "name": "strong-spawn-npm",
+  "version": "1.0.0",
+  "description": "Reliably spawn npm™ on any platform",
+  "homepage": "https://github.com/strongloop/strong-spawn-npm"
+}

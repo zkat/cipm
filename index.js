@@ -135,6 +135,7 @@ class Installer {
   }
 }
 module.exports = Installer
+module.exports._readJson = readJson
 
 function readJson (jsonPath, name, ignoreMissing) {
   return readFileAsync(path.join(jsonPath, name), 'utf8')

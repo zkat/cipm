@@ -5,6 +5,7 @@ const test = require('tap').test
 const requireInject = require('require-inject')
 
 test('cli: invokes main with parsed options', t => {
+  t.plan(2)
   class FakeInstaller {
     constructor (opts) {
       this.opts = opts

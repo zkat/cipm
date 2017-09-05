@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.3.0"></a>
+# [0.3.0](https://github.com/zkat/cipm/compare/v0.2.0...v0.3.0) (2017-09-05)
+
+
+### Features
+
+* **lockfile:** verify that lockfile matches package.json (#5) ([f631203](https://github.com/zkat/cipm/commit/f631203))
+* **scripts:** support --ignore-scripts option (#9) ([213ca02](https://github.com/zkat/cipm/commit/213ca02))
+
+
+
 <a name="0.2.0"></a>
 # [0.2.0](https://github.com/zkat/cipm/compare/v0.1.1...v0.2.0) (2017-09-01)
 

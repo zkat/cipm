@@ -1,15 +1,17 @@
 'use strict'
 
+const fixtureHelper = require('../lib/fixtureHelper.js')
 const fs = require('fs')
 const path = require('path')
-const test = require('tap').test
 const requireInject = require('require-inject')
-const fixtureHelper = require('../lib/fixtureHelper.js')
+const test = require('tap').test
 
 let extract = () => {}
 const pkgName = 'hark-a-package'
 const pkgVersion = '1.0.0'
-const writeEnvScript = 'node -e \'const fs = require("fs"); fs.writeFileSync(process.cwd() + "/" + process.env.npm_lifecycle_event, process.env.npm_lifecycle_event);\''
+const writeEnvScript = process.platform === 'win32'
+                     ? 'echo %npm_lifecycle_event% > %npm_lifecycle_event%'
+                     : 'echo $npm_lifecycle_event > $npm_lifecycle_event'
 
 const Installer = requireInject('../../index.js', {
   '../../lib/extract': {
@@ -137,7 +139,7 @@ test('handles dependency list with only shallow subdeps', t => {
 
   new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 1)
-    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'index.js', aContents))
+    t.ok(fixtureHelper.equals(path.join(prefix, 'node_modules', 'a'), 'index.js', aContents))
 
     fixtureHelper.teardown()
     t.end()
@@ -184,8 +186,8 @@ test('handles dependency list with only deep subdeps', t => {
 
   new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 2)
-    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'index.js', aContents))
-    t.ok(fixtureHelper.equals(prefix + '/node_modules/a/node_modules/b', 'index.js', bContents))
+    t.ok(fixtureHelper.equals(path.join(prefix, 'node_modules', 'a'), 'index.js', aContents))
+    t.ok(fixtureHelper.equals(path.join(prefix, 'node_modules', 'a', 'node_modules', 'b'), 'index.js', bContents))
 
     fixtureHelper.teardown()
     t.end()
@@ -230,12 +232,12 @@ test('runs lifecycle hooks of packages with env variables', t => {
 
   new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 1)
-    t.ok(fixtureHelper.equals(prefix, 'preinstall', 'preinstall'))
-    t.ok(fixtureHelper.equals(prefix, 'install', 'install'))
-    t.ok(fixtureHelper.equals(prefix, 'postinstall', 'postinstall'))
-    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'preinstall', 'preinstall'))
-    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'install', 'install'))
-    t.ok(fixtureHelper.equals(prefix + '/node_modules/a', 'postinstall', 'postinstall'))
+    t.match(fixtureHelper.read(prefix, 'preinstall'), 'preinstall')
+    t.match(fixtureHelper.read(prefix, 'install'), 'install')
+    t.match(fixtureHelper.read(prefix, 'postinstall'), 'postinstall')
+    t.match(fixtureHelper.read(path.join(prefix, 'node_modules', 'a'), 'preinstall'), 'preinstall')
+    t.match(fixtureHelper.read(path.join(prefix, 'node_modules', 'a'), 'install'), 'install')
+    t.match(fixtureHelper.read(path.join(prefix, 'node_modules', 'a'), 'postinstall'), 'postinstall')
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog
@@ -288,9 +290,9 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     t.ok(fixtureHelper.missing(prefix, 'preinstall'))
     t.ok(fixtureHelper.missing(prefix, 'install'))
     t.ok(fixtureHelper.missing(prefix, 'postinstall'))
-    t.ok(fixtureHelper.missing(prefix + '/node_modules/a', 'preinstall'))
-    t.ok(fixtureHelper.missing(prefix + '/node_modules/a', 'install'))
-    t.ok(fixtureHelper.missing(prefix + '/node_modules/a', 'postinstall'))
+    t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'preinstall'))
+    t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'install'))
+    t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'postinstall'))
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog

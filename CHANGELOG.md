@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.3.2"></a>
+## [0.3.2](https://github.com/zkat/cipm/compare/v0.3.1...v0.3.2) (2017-09-06)
+
+
+### Bug Fixes
+
+* **bin:** make cli executable by default (#13) ([14a9a5f](https://github.com/zkat/cipm/commit/14a9a5f))
+* **config:** use npm.cmd on win32 and fix tests (#12) ([d912d16](https://github.com/zkat/cipm/commit/d912d16)), closes [#12](https://github.com/zkat/cipm/issues/12)
+* **json:** strip BOM when reading JSON files (#8) ([2529149](https://github.com/zkat/cipm/commit/2529149))
+
+
+
 <a name="0.3.1"></a>
 ## [0.3.1](https://github.com/zkat/cipm/compare/v0.3.0...v0.3.1) (2017-09-05)
 

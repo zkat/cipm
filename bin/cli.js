@@ -5,13 +5,21 @@
 const yargs = require('yargs')
 const Installer = require('../index.js')
 
-new Installer(parseArgs()).run().then(details => {
-  console.error(`added ${details.pkgCount} packages in ${
-    details.runTime / 1000
-  }s.`)
-}, err => {
-  console.error(`Error!\n${err.message}`)
-})
+module.exports = cliMain
+
+if (require.main === module) {
+  cliMain()
+}
+
+function cliMain () {
+  return new Installer(parseArgs()).run().then(details => {
+    console.error(`added ${details.pkgCount} packages in ${
+      details.runTime / 1000
+    }s.`)
+  }, err => {
+    console.error(`Error!\n${err.message}`)
+  })
+}
 
 function parseArgs () {
   return yargs

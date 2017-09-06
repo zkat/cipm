@@ -1,9 +1,10 @@
 'use strict'
 
-const path = require('path')
-const test = require('tap').test
-const requireInject = require('require-inject')
 const fixtureHelper = require('../lib/fixtureHelper.js')
+const fs = require('fs')
+const path = require('path')
+const requireInject = require('require-inject')
+const test = require('tap').test
 
 let extract = () => {}
 const pkgName = 'hark-a-package'
@@ -297,4 +298,21 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     console.log = originalConsoleLog
     t.end()
   })
+})
+
+test('handles JSON docs that contain a BOM', t => {
+  t.plan(2)
+  const Installer = requireInject('../../index.js', {/* just don't want to cache */})
+  const bomJSON = 'package-json-with-bom.json'
+  const bomJSONDir = path.resolve(__dirname, '../lib')
+  const actualJSON = {
+    name: 'strong-spawn-npm',
+    version: '1.0.0',
+    description: 'Reliably spawn npm™ on any platform',
+    homepage: 'https://github.com/strongloop/strong-spawn-npm'
+  }
+  // ensure that the file does indeed fail to be parsed by JSON.parse
+  t.throws(() => JSON.parse(fs.readFileSync(path.join(bomJSONDir, bomJSON), 'utf8')),
+           {message: 'Unexpected token \uFEFF'})
+  return Installer._readJson(bomJSONDir, bomJSON).then(obj => t.match(obj, actualJSON))
 })

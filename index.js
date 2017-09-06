@@ -135,13 +135,18 @@ class Installer {
   }
 }
 module.exports = Installer
+module.exports._readJson = readJson
 
 function readJson (jsonPath, name, ignoreMissing) {
   return readFileAsync(path.join(jsonPath, name), 'utf8')
-  .then(str => JSON.parse(str))
+  .then(str => JSON.parse(stripBOM(str)))
   .catch({code: 'ENOENT'}, err => {
     if (!ignoreMissing) {
       throw err
     }
   })
+}
+
+function stripBOM (str) {
+  return str.replace(/^\uFEFF/, '')
 }

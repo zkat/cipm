@@ -4,10 +4,11 @@ const BB = require('bluebird')
 const fs = require('fs')
 const mkdirp = require('mkdirp')
 const resolve = require('path').resolve
+const pathSep = require('path').sep
 const rimraf = require('rimraf')
 
 function getPath (dir) {
-  return resolve(__dirname, '..', 'fixtures', dir)
+  return resolve(__dirname, '..', 'fixtures', dir.replace(/\//g, pathSep))
 }
 
 function writeFile (path, name, contents) {
@@ -19,7 +20,8 @@ function writeFile (path, name, contents) {
 
 function writeFiles (path, fs) {
   Object.keys(fs).forEach(fileName => {
-    writeFile(path, fileName, fs[fileName])
+    const filePath = fileName.replace(/\//g, pathSep)
+    writeFile(path, filePath, fs[fileName])
   })
 }
 
@@ -44,6 +46,10 @@ module.exports = {
 
     return expected === fs.readFileSync(resolve(path, name)).toString()
   },
+  read (dir, name) {
+    const path = getPath(dir)
+    return fs.readFileSync(resolve(path, name)).toString()
+  },
   missing (dir, name) {
     const path = getPath(dir)
     try {
@@ -59,7 +65,7 @@ module.exports = {
     const path = getPath(dir)
     return (_, child, childPath) => {
       mkdirp.sync(childPath)
-      const pathSuffix = childPath.replace(path, '')
+      const pathSuffix = childPath.replace(path, '').replace(/\\/g, '/')
       writeFiles(childPath, fs[pathSuffix])
       return BB.resolve()
     }

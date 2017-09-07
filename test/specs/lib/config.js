@@ -63,9 +63,9 @@ test('config: parses configs from npm', t => {
   const expectedConfig = { a: 1, b: 2 }
 
   config(dir).then(config => {
-    t.same(config.config.a, expectedConfig.a)
-    t.same(config.config.b, expectedConfig.b)
-    t.same(config.dir, dir)
+    t.same(config.lifecycleOpts.config.a, expectedConfig.a)
+    t.same(config.lifecycleOpts.config.b, expectedConfig.b)
+    t.same(config.prefix, dir)
     t.same(config.log, npmlog)
     t.end()
   })

@@ -1,6 +1,6 @@
 environment:
   matrix:
-    - nodejs_version: "7"
+    - nodejs_version: "8"
     - nodejs_version: "6"
     - nodejs_version: "4"
 
@@ -10,7 +10,7 @@ platform:
 install:
   - ps: Install-Product node $env:nodejs_version $env:platform
   - npm config set spin false
-  - npm i -g npm@latest
+  - npm i -g npm@^5.4.0
   - npm install
 
 test_script:

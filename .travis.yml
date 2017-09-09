@@ -1,9 +1,9 @@
 # cipm currently relies on npm >5.4.0 to retrieve config
 before_install:
-  - npm i -g npm@5.4.0
+  - npm i -g npm@^5.4.0
 language: node_js
 sudo: false
 node_js:
-  - "7"
+  - "8"
   - "6"
   - "4"

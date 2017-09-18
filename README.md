@@ -14,7 +14,7 @@
 
 ## DESCRIPTION
 
-When invoked inside an npm project with a `package.json` and `package-lock.json` (or an `npm-shrinwkrap.json`), it will install the specified dependencies and run their install scripts.
+When invoked inside an npm project with a `package.json` and `package-lock.json` (or an `npm-shrinkwrap.json`), it will install the specified dependencies and run their install scripts.
 
 The main difference between this and `npm install` is that `cipm` is both a small, standalone program, and that it can bypass a lot of the heavier machinery in npm oriented towards interacting with invalid states: `cipm` completely removes `node_modules` before beginning the install, if it exists.
 

@@ -15,7 +15,6 @@ const readFileAsync = BB.promisify(fs.readFile)
 
 class Installer {
   constructor (opts) {
-    // Config
     this.opts = opts
 
     // Stats
@@ -47,6 +46,9 @@ class Installer {
         }
       )
     }).then(() => {
+      return config(this.prefix, process.argv, this.pkg)
+    }).then(conf => {
+      this.config = conf
       return BB.join(
         this.checkLock(),
         rimraf(path.join(this.prefix, 'node_modules'))
@@ -96,13 +98,14 @@ class Installer {
     return BB.map(Object.keys(deps || {}), name => {
       const child = deps[name]
       const childPath = path.join(modPath, name)
-      return extract.child(name, child, childPath).then(() => {
+      return extract.child(name, child, childPath, this.config).then(() => {
         return readJson(childPath, 'package.json')
       }).tap(pkg => {
         return this.runScript('preinstall', pkg, childPath)
       }).then(pkg => {
-        return this.extractDeps(path.join(childPath, 'node_modules'), child.dependencies)
-        .then(dependencies => {
+        return this.extractDeps(
+          path.join(childPath, 'node_modules'), child.dependencies
+        ).then(dependencies => {
           return {
             name,
             package: pkg,
@@ -124,12 +127,10 @@ class Installer {
   }
 
   runScript (stage, pkg, pkgPath) {
-    if (!this.opts.ignoreScripts && pkg.scripts && pkg.scripts[stage]) {
+    if (!this.config.lifecycleOpts.ignoreScripts && pkg.scripts && pkg.scripts[stage]) {
       // TODO(mikesherov): remove pkg._id when npm-lifecycle no longer relies on it
       pkg._id = pkg.name + '@' + pkg.version
-      return config(this.prefix).then(config => {
-        return lifecycle(pkg, stage, pkgPath, config)
-      })
+      return lifecycle(pkg, stage, pkgPath, this.config.lifecycleOpts)
     }
     return BB.resolve()
   }

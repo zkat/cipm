@@ -230,7 +230,7 @@ test('runs lifecycle hooks of packages with env variables', t => {
     }
   })
 
-  new Installer({prefix}).run().then(details => {
+  return new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 1)
     t.match(fixtureHelper.read(prefix, 'preinstall'), 'preinstall')
     t.match(fixtureHelper.read(prefix, 'install'), 'install')
@@ -241,7 +241,6 @@ test('runs lifecycle hooks of packages with env variables', t => {
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog
-    t.end()
   })
 })
 

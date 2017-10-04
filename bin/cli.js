@@ -17,7 +17,7 @@ function cliMain () {
       details.runTime / 1000
     }s.`)
   }, err => {
-    console.error(`Error!\n${err.message}`)
+    console.error(`Error!\n${err.message}\n${err.stack}`)
   })
 }
 

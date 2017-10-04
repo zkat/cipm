@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.4.0"></a>
+# [0.4.0](https://github.com/zkat/cipm/compare/v0.3.2...v0.4.0) (2017-10-04)
+
+
+### Features
+
+* **opts:** support full range of relevant CLI opts (#19) ([6f2bd51](https://github.com/zkat/cipm/commit/6f2bd51))
+
+
+
 <a name="0.3.2"></a>
 ## [0.3.2](https://github.com/zkat/cipm/compare/v0.3.1...v0.3.2) (2017-09-06)
 

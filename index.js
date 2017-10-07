@@ -68,6 +68,9 @@ class Installer {
       extract.stopWorkers()
       this.runTime = Date.now() - this.startTime
       return this
+    }, e => {
+      extract.stopWorkers()
+      throw e
     })
   }
 

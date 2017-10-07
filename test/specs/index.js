@@ -115,11 +115,16 @@ test('handles dependency list with only shallow subdeps', t => {
   const prefix = fixtureHelper.write(pkgName, {
     'package.json': {
       name: pkgName,
-      version: pkgVersion
+      version: pkgVersion,
+      dependencies: {
+        'a': '^1'
+      }
     },
     'package-lock.json': {
       dependencies: {
-        a: {}
+        a: {
+          version: '1.1.1'
+        }
       },
       lockfileVersion: 1
     }
@@ -150,13 +155,22 @@ test('handles dependency list with only deep subdeps', t => {
   const prefix = fixtureHelper.write(pkgName, {
     'package.json': {
       name: pkgName,
-      version: pkgVersion
+      version: pkgVersion,
+      dependencies: {
+        a: '^1'
+      }
     },
     'package-lock.json': {
       dependencies: {
         a: {
+          version: '1.1.1',
+          requires: {
+            b: '2.2.2'
+          },
           dependencies: {
-            b: {}
+            b: {
+              version: '2.2.2'
+            }
           }
         }
       },
@@ -206,11 +220,14 @@ test('runs lifecycle hooks of packages with env variables', t => {
         preinstall: writeEnvScript,
         install: writeEnvScript,
         postinstall: writeEnvScript
+      },
+      dependencies: {
+        a: '^1'
       }
     },
     'package-lock.json': {
       dependencies: {
-        a: {}
+        a: { version: '1.0.0' }
       },
       lockfileVersion: 1
     }
@@ -252,6 +269,7 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     'package.json': {
       name: pkgName,
       version: pkgVersion,
+      dependencies: { a: '^1' },
       scripts: {
         preinstall: writeEnvScript,
         install: writeEnvScript,
@@ -260,7 +278,7 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     },
     'package-lock.json': {
       dependencies: {
-        a: {}
+        a: { version: '1.0.0' }
       },
       lockfileVersion: 1
     }

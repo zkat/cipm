@@ -15,7 +15,7 @@ function cliMain () {
   return new Installer(parseArgs()).run().then(details => {
     console.error(`added ${details.pkgCount} packages in ${
       details.runTime / 1000
-    }s.`)
+    }s`)
   }, err => {
     console.error(`Error!\n${err.message}\n${err.stack}`)
   })

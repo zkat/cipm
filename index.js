@@ -122,9 +122,13 @@ class Installer {
         })
       }).tap(full => {
         this.pkgCount++
-        return this.runScript('install', full.package, childPath)
-      }).tap(full => {
-        return this.runScript('postinstall', full.package, childPath)
+        return this.runScript('install', full.package, childPath).then(() => {
+          return this.runScript('postinstall', full.package, childPath)
+        }).catch(err => {
+          if (!child.optional) {
+            throw err
+          }
+        })
       })
     }, {concurrency: 50})
   }

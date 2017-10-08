@@ -9,6 +9,7 @@ const getPrefix = require('./lib/get-prefix.js')
 const lifecycle = require('npm-lifecycle')
 const lockVerify = require('lock-verify')
 const path = require('path')
+const logi = require('npm-logical-tree')
 const rimraf = BB.promisify(require('rimraf'))
 
 const readFileAsync = BB.promisify(fs.readFile)
@@ -19,22 +20,38 @@ class Installer {
 
     // Stats
     this.startTime = Date.now()
-    this.runTime = null
+    this.runTime = 0
     this.pkgCount = 0
 
     // Misc
     this.pkg = null
-    this.scriptQ = []
   }
 
   run () {
+    return this.prepare()
+    .then(() => this.runScript('preinstall', this.pkg, this.prefix))
+    .then(() => this.extractTree(this.logicalTree))
+    .then(() => this.runScript('install', this.pkg, this.prefix))
+    .then(() => this.runScript('postinstall', this.pkg, this.prefix))
+    .then(() => {
+      extract.stopWorkers()
+      this.runTime = Date.now() - this.startTime
+      return this
+    }, e => {
+      extract.stopWorkers()
+      throw e
+    })
+  }
+
+  prepare () {
     extract.startWorkers()
 
     return (
       this.opts.prefix
       ? BB.resolve(this.opts.prefix)
       : getPrefix(process.cwd())
-    ).then(prefix => {
+    )
+    .then(prefix => {
       this.prefix = prefix
       return BB.join(
         readJson(prefix, 'package.json'),
@@ -45,32 +62,17 @@ class Installer {
           this.pkg = pkg
         }
       )
-    }).then(() => {
-      return config(this.prefix, process.argv, this.pkg)
-    }).then(conf => {
+    })
+    .then(() => config(this.prefix, process.argv, this.pkg))
+    .then(conf => {
       this.config = conf
       return BB.join(
         this.checkLock(),
         rimraf(path.join(this.prefix, 'node_modules'))
       )
     }).then(() => {
-      return this.runScript('preinstall', this.pkg, this.prefix)
-    }).then(() => {
-      return this.extractDeps(
-        path.join(this.prefix, 'node_modules'),
-        this.pkg._shrinkwrap.dependencies
-      )
-    }).then(() => {
-      return this.runScript('install', this.pkg, this.prefix)
-    }).then(() => {
-      return this.runScript('postinstall', this.pkg, this.prefix)
-    }).then(() => {
-      extract.stopWorkers()
-      this.runTime = Date.now() - this.startTime
-      return this
-    }, e => {
-      extract.stopWorkers()
-      throw e
+      // This needs to happen -after- we've done checkLock()
+      this.logicalTree = logi(this.pkg, this.pkg._shrinkwrap)
     })
   }
 
@@ -97,36 +99,31 @@ class Installer {
     })
   }
 
-  extractDeps (modPath, deps) {
-    return BB.map(Object.keys(deps || {}), name => {
-      const child = deps[name]
-      const childPath = path.join(modPath, name)
-      return extract.child(name, child, childPath, this.config).then(() => {
-        return readJson(childPath, 'package.json')
-      }).tap(pkg => {
+  extractTree (tree) {
+    const deps = tree.dependencies.values()
+    return BB.map(deps, child => {
+      if (child.pending) { return hasCycle(child) || child.pending }
+      if (child.dev && this.config.config.production) { return }
+      const childPath = path.join(
+        this.prefix,
+        'node_modules',
+        child.address.replace(/:/g, '/node_modules/')
+      )
+      child.pending = BB.resolve()
+      .then(() => extract.child(child.name, child, childPath, this.config))
+      .then(() => readJson(childPath, 'package.json'))
+      .then(pkg => {
         return this.runScript('preinstall', pkg, childPath)
-      }).then(pkg => {
-        return this.extractDeps(
-          path.join(childPath, 'node_modules'), child.dependencies
-        ).then(dependencies => {
-          return {
-            name,
-            package: pkg,
-            child,
-            childPath,
-            dependencies: dependencies.reduce((acc, dep) => {
-              acc[dep.name] = dep
-              return acc
-            }, {})
-          }
+        .then(() => this.extractTree(child))
+        .then(() => this.runScript('install', pkg, childPath))
+        .then(() => this.runScript('postinstall', pkg, childPath))
+        .then(() => {
+          this.pkgCount++
+          return this
         })
-      }).tap(full => {
-        this.pkgCount++
-        return this.runScript('install', full.package, childPath)
-      }).tap(full => {
-        return this.runScript('postinstall', full.package, childPath)
       })
-    }, {concurrency: 50})
+      return child.pending
+    }, { concurrency: 50 })
   }
 
   runScript (stage, pkg, pkgPath) {
@@ -153,4 +150,15 @@ function readJson (jsonPath, name, ignoreMissing) {
 
 function stripBOM (str) {
   return str.replace(/^\uFEFF/, '')
+}
+
+function hasCycle (child, seen) {
+  seen = seen || new Set()
+  if (seen.has(child.address)) {
+    return true
+  } else {
+    seen.add(child.address)
+    const deps = Array.from(child.dependencies.values())
+    return deps.some(dep => hasCycle(dep, seen))
+  }
 }

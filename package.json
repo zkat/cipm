@@ -32,6 +32,20 @@
     "twitter": "maybekatz"
   },
   "license": "MIT",
+  "bundleDependencies": [
+    "bin-links",
+    "bluebird",
+    "graceful-fs",
+    "lock-verify",
+    "npm-lifecycle",
+    "npm-logical-tree",
+    "npm-package-arg",
+    "npmlog",
+    "read-package-json",
+    "rimraf",
+    "worker-farm",
+    "yargs"
+  ],
   "dependencies": {
     "bin-links": "^1.0.0",
     "bluebird": "^3.5.1",

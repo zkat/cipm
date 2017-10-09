@@ -37,6 +37,8 @@ class Installer {
     .then(() => this.extractTree(this.logicalTree))
     .then(() => this.runScript('install', this.pkg, this.prefix))
     .then(() => this.runScript('postinstall', this.pkg, this.prefix))
+    .then(() => this.runScript('prepublish', this.pkg, this.prefix))
+    .then(() => this.runScript('prepare', this.pkg, this.prefix))
     .then(() => {
       extract.stopWorkers()
       this.runTime = Date.now() - this.startTime

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.6.0"></a>
+# [0.6.0](https://github.com/zkat/cipm/compare/v0.5.1...v0.6.0) (2017-10-09)
+
+
+### Features
+
+* **scripts:** run prepare and prepublish scripts in the root (#26) ([e0e35a3](https://github.com/zkat/cipm/commit/e0e35a3))
+
+
+
 <a name="0.5.1"></a>
 ## [0.5.1](https://github.com/zkat/cipm/compare/v0.5.0...v0.5.1) (2017-10-09)
 

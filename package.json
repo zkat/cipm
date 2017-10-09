@@ -49,7 +49,7 @@
   },
   "devDependencies": {
     "mkdirp": "^0.5.1",
-    "nyc": "^11.2.0",
+    "nyc": "^11.2.1",
     "require-inject": "^1.4.2",
     "standard": "^10.0.3",
     "standard-version": "^4.2.0",

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.5.0"></a>
+# [0.5.0](https://github.com/zkat/cipm/compare/v0.4.0...v0.5.0) (2017-10-09)
+
+
+### Bug Fixes
+
+* **output:** npm does not punctuate this ([e7ba976](https://github.com/zkat/cipm/commit/e7ba976))
+* **shutdown:** make sure workers close ([7ab57d0](https://github.com/zkat/cipm/commit/7ab57d0))
+
+
+### Features
+
+* **bin:** link bins and run scripts (#25) ([fab74bf](https://github.com/zkat/cipm/commit/fab74bf))
+* **lifecycle:** run scripts in dep order (#23) ([68ecfac](https://github.com/zkat/cipm/commit/68ecfac))
+
+
+
 <a name="0.4.0"></a>
 # [0.4.0](https://github.com/zkat/cipm/compare/v0.3.2...v0.4.0) (2017-10-04)
 

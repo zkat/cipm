@@ -2,14 +2,17 @@
 
 const BB = require('bluebird')
 
+const binLink = require('bin-links')
 const config = require('./lib/config.js')
 const extract = require('./lib/extract.js')
 const fs = require('graceful-fs')
 const getPrefix = require('./lib/get-prefix.js')
 const lifecycle = require('npm-lifecycle')
 const lockVerify = require('lock-verify')
-const path = require('path')
 const logi = require('npm-logical-tree')
+const npmlog = require('npmlog')
+const path = require('path')
+const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
 
 const readFileAsync = BB.promisify(fs.readFile)
@@ -24,6 +27,7 @@ class Installer {
     this.pkgCount = 0
 
     // Misc
+    this.log = npmlog
     this.pkg = null
   }
 
@@ -111,10 +115,20 @@ class Installer {
       )
       child.pending = BB.resolve()
       .then(() => extract.child(child.name, child, childPath, this.config))
-      .then(() => readJson(childPath, 'package.json'))
+      .then(() => readPkgJson(path.join(childPath, 'package.json')))
       .then(pkg => {
         return this.runScript('preinstall', pkg, childPath)
         .then(() => this.extractTree(child))
+        .then(() => binLink(pkg, childPath, false, {
+          force: this.config.config.force,
+          ignoreScripts: this.config.lifecycleOpts.ignoreScripts,
+          log: this.log,
+          name: pkg.name,
+          pkgId: pkg.name + '@' + pkg.version,
+          prefix: this.prefix,
+          prefixes: [this.prefix],
+          umask: this.config.config.umask
+        }), e => {})
         .then(() => this.runScript('install', pkg, childPath))
         .then(() => this.runScript('postinstall', pkg, childPath))
         .then(() => {

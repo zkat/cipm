@@ -219,7 +219,9 @@ test('runs lifecycle hooks of packages with env variables', t => {
       scripts: {
         preinstall: writeEnvScript,
         install: writeEnvScript,
-        postinstall: writeEnvScript
+        postinstall: writeEnvScript,
+        prepublish: writeEnvScript,
+        prepare: writeEnvScript
       },
       dependencies: {
         a: '^1'
@@ -241,7 +243,9 @@ test('runs lifecycle hooks of packages with env variables', t => {
         scripts: {
           preinstall: writeEnvScript,
           install: writeEnvScript,
-          postinstall: writeEnvScript
+          postinstall: writeEnvScript,
+          prepublish: writeEnvScript,
+          prepare: writeEnvScript
         }
       }
     }
@@ -252,9 +256,13 @@ test('runs lifecycle hooks of packages with env variables', t => {
     t.match(fixtureHelper.read(prefix, 'preinstall'), 'preinstall')
     t.match(fixtureHelper.read(prefix, 'install'), 'install')
     t.match(fixtureHelper.read(prefix, 'postinstall'), 'postinstall')
+    t.match(fixtureHelper.read(prefix, 'prepublish'), 'prepublish')
+    t.match(fixtureHelper.read(prefix, 'prepare'), 'prepare')
     t.match(fixtureHelper.read(path.join(prefix, 'node_modules', 'a'), 'preinstall'), 'preinstall')
     t.match(fixtureHelper.read(path.join(prefix, 'node_modules', 'a'), 'install'), 'install')
     t.match(fixtureHelper.read(path.join(prefix, 'node_modules', 'a'), 'postinstall'), 'postinstall')
+    t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'prepublish'), 'prepublish not run on deps')
+    t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'prepare'), 'prepare not run on deps')
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog
@@ -273,7 +281,9 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
       scripts: {
         preinstall: writeEnvScript,
         install: writeEnvScript,
-        postinstall: writeEnvScript
+        postinstall: writeEnvScript,
+        prepublish: writeEnvScript,
+        prepare: writeEnvScript
       }
     },
     'package-lock.json': {
@@ -296,7 +306,9 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
         scripts: {
           preinstall: writeEnvScript,
           install: writeEnvScript,
-          postinstall: writeEnvScript
+          postinstall: writeEnvScript,
+          prepublish: writeEnvScript,
+          prepare: writeEnvScript
         }
       }
     }
@@ -307,9 +319,13 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     t.ok(fixtureHelper.missing(prefix, 'preinstall'))
     t.ok(fixtureHelper.missing(prefix, 'install'))
     t.ok(fixtureHelper.missing(prefix, 'postinstall'))
+    t.ok(fixtureHelper.missing(prefix, 'prepublish'))
+    t.ok(fixtureHelper.missing(prefix, 'prepare'))
     t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'preinstall'))
     t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'install'))
     t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'postinstall'))
+    t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'prepublish'))
+    t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'prepare'))
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog

@@ -29,12 +29,16 @@ class Installer {
     // Misc
     this.log = npmlog
     this.pkg = null
+    this.tree = null
+    this.failedDeps = new Set()
+    this.purgedDeps = new Set()
   }
 
   run () {
     return this.prepare()
     .then(() => this.runScript('preinstall', this.pkg, this.prefix))
     .then(() => this.extractTree(this.logicalTree))
+    .then(() => this.garbageCollect(this.logicalTree))
     .then(() => this.runScript('install', this.pkg, this.prefix))
     .then(() => this.runScript('postinstall', this.pkg, this.prefix))
     .then(() => this.runScript('prepublish', this.pkg, this.prefix))
@@ -137,9 +141,62 @@ class Installer {
           this.pkgCount++
           return this
         })
+        .catch(e => {
+          if (child.optional) {
+            this.pkgCount++
+            this.failedDeps.add(child)
+            return rimraf(childPath)
+          } else {
+            throw e
+          }
+        })
       })
       return child.pending
     }, { concurrency: 50 })
+  }
+
+  // A cute little mark-and-sweep collector!
+  garbageCollect (tree) {
+    if (!this.failedDeps.size) { return }
+
+    const liveDeps = new Set()
+    const installer = this
+    const seen = new Set()
+    const failed = this.failedDeps
+    const purged = this.purgedDeps
+    mark(tree)
+    seen.clear()
+    return sweep(tree)
+
+    function mark (tree) {
+      for (let dep of tree.dependencies.values()) {
+        if (seen.has(dep)) { continue }
+        seen.add(dep)
+        if (!failed.has(dep)) {
+          liveDeps.add(dep)
+          mark(dep)
+        }
+      }
+    }
+
+    function sweep (tree) {
+      return BB.map(tree.dependencies.values(), dep => {
+        if (seen.has(dep)) { return }
+        seen.add(dep)
+        return sweep(dep).then(() => {
+          if (!liveDeps.has(dep) && !purged.has(dep)) {
+            const depPath = path.join(
+              installer.prefix,
+              'node_modules',
+              dep.address.replace(/:/g, '/node_modules/')
+            )
+            installer.pkgCount--
+            purged.add(dep)
+            return rimraf(depPath)
+          }
+        })
+      }, { concurrency: 100 })
+    }
   }
 
   runScript (stage, pkg, pkgPath) {
@@ -151,7 +208,9 @@ class Installer {
     return BB.resolve()
   }
 }
+
 module.exports = Installer
+
 module.exports._readJson = readJson
 
 function readJson (jsonPath, name, ignoreMissing) {

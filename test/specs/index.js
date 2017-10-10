@@ -120,6 +120,8 @@ test('handles dependency list with only shallow subdeps', t => {
       }
     }),
     'package-lock.json': File({
+      name: pkgName,
+      verson: pkgVersion,
       dependencies: {
         a: {
           version: '1.1.1'
@@ -259,6 +261,112 @@ test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
       name: 'a',
       version: '1.1.1'
     }, 'uses version from npm-shrinkwrap')
+  })
+})
+
+test('removes failed optional dependencies', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: {
+        a: '^1'
+      },
+      optionalDependencies: {
+        b: '^2'
+      }
+    }),
+    'package-lock.json': File({
+      lockfileVersion: 1,
+      requires: true,
+      dependencies: {
+        a: {
+          version: '1.0.0',
+          requires: {
+            b: '2.0.0',
+            d: '4.0.0'
+          }
+        },
+        b: {
+          version: '2.0.0',
+          optional: true,
+          requires: {
+            c: '3.0.0',
+            d: '4.0.0'
+          }
+        },
+        c: {
+          version: '3.0.0',
+          optional: true
+        },
+        d: {
+          version: '4.0.0'
+        }
+      }
+    })
+  }))
+  fixture.create(prefix)
+
+  extract = (name, child, childPath, opts) => {
+    let files
+    if (child.name === 'a') {
+      files = new Tacks(Dir({
+        'package.json': File({
+          name: 'a',
+          version: '1.0.0',
+          dependencies: {
+            b: '^2',
+            d: '^4'
+          }
+        })
+      }))
+    } else if (child.name === 'b') {
+      files = new Tacks(Dir({
+        'package.json': File({
+          name: 'b',
+          version: '2.0.0',
+          dependencies: {
+            c: '^3',
+            d: '^4'
+          },
+          scripts: {
+            install: 'exit 1'
+          }
+        })
+      }))
+    } else if (child.name === 'c') {
+      files = new Tacks(Dir({
+        'package.json': File({
+          name: 'c',
+          version: '3.0.0'
+        })
+      }))
+    } else if (child.name === 'd') {
+      files = new Tacks(Dir({
+        'package.json': File({
+          name: 'd',
+          version: '4.0.0'
+        })
+      }))
+    }
+    files.create(childPath)
+  }
+
+  const originalConsoleLog = console.log
+  console.log = () => {}
+  return new Installer({prefix}).run().then(details => {
+    console.log = originalConsoleLog
+    t.ok(true, 'installer succeeded even with optDep failure')
+    t.equal(details.pkgCount, 2, 'only successful deps counted')
+    const modP = path.join(prefix, 'node_modules')
+    t.ok(fs.statSync(path.join(modP, 'a')), 'dep a is there')
+    t.ok(fs.statSync(path.join(modP, 'd')), 'transitive dep d is there')
+    t.throws(() => {
+      fs.statSync(path.join(prefix, 'node_modules', 'b'))
+    }, 'failed optional dep b not in node_modules')
+    t.throws(() => {
+      fs.statSync(path.join(prefix, 'node_modules', 'c'))
+    }, 'isolated dependency d of failed dep removed')
   })
 })
 

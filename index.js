@@ -64,7 +64,7 @@ class Installer {
         readJson(prefix, 'package-lock.json', true),
         readJson(prefix, 'npm-shrinkwrap.json', true),
         (pkg, lock, shrink) => {
-          pkg._shrinkwrap = lock || shrink
+          pkg._shrinkwrap = shrink || lock
           this.pkg = pkg
         }
       )

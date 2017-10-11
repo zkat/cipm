@@ -213,6 +213,55 @@ test('handles dependency list with only deep subdeps', t => {
   })
 })
 
+test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: {
+        'a': '^1'
+      }
+    }),
+    'npm-shrinkwrap.json': File({
+      dependencies: {
+        a: {
+          version: '1.1.1'
+        }
+      },
+      lockfileVersion: 1
+    }),
+    'package-lock.json': File({
+      dependencies: {
+        a: {
+          version: '1.2.3'
+        }
+      },
+      lockfileVersion: 1
+    })
+  }))
+  fixture.create(prefix)
+
+  extract = (name, child, childPath, opts) => {
+    const files = new Tacks(Dir({
+      'package.json': File({
+        name: child.name,
+        version: child.version
+      })
+    }))
+    files.create(childPath)
+  }
+
+  return new Installer({prefix}).run().then(details => {
+    t.equal(details.pkgCount, 1)
+    return fs.readFileAsync(path.join(prefix, 'node_modules', 'a', 'package.json'), 'utf8')
+  }).then(pkgJson => {
+    t.deepEqual(JSON.parse(pkgJson), {
+      name: 'a',
+      version: '1.1.1'
+    }, 'uses version from npm-shrinkwrap')
+  })
+})
+
 test('runs lifecycle hooks of packages with env variables', t => {
   const originalConsoleLog = console.log
   console.log = () => {}

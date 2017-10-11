@@ -1,10 +1,16 @@
 'use strict'
 
+const BB = require('bluebird')
+
 const fixtureHelper = require('../lib/fixtureHelper.js')
-const fs = require('fs')
+const fs = BB.promisifyAll(require('fs'))
 const path = require('path')
 const requireInject = require('require-inject')
+const Tacks = require('tacks')
 const test = require('tap').test
+
+const Dir = Tacks.Dir
+const File = Tacks.File
 
 let extract = () => {}
 const pkgName = 'hark-a-package'
@@ -12,6 +18,8 @@ const pkgVersion = '1.0.0'
 const writeEnvScript = process.platform === 'win32'
                      ? 'echo %npm_lifecycle_event% > %npm_lifecycle_event%'
                      : 'echo $npm_lifecycle_event > $npm_lifecycle_event'
+
+const prefix = require('../lib/test-dir')(__filename)
 
 const Installer = requireInject('../../index.js', {
   '../../lib/extract': {
@@ -24,143 +32,136 @@ const Installer = requireInject('../../index.js', {
 })
 
 test('throws error when no package.json is found', t => {
-  const prefix = fixtureHelper.write(pkgName, {
-    'index.js': 'var a = 1;'
-  })
+  const fixture = new Tacks(Dir({
+    'index.js': File('var a = 1')
+  }))
+  fixture.create(prefix)
 
-  new Installer({prefix}).run().catch(err => {
+  return new Installer({prefix}).run().catch(err => {
     t.equal(err.code, 'ENOENT')
-
-    fixtureHelper.teardown()
-    t.end()
   })
 })
 
 test('throws error when no package-lock nor shrinkwrap is found', t => {
-  const prefix = fixtureHelper.write(pkgName, {
-    'package.json': {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
       name: pkgName,
       version: pkgVersion
-    }
-  })
+    })
+  }))
+  fixture.create(prefix)
 
-  new Installer({prefix}).run().catch(err => {
+  return new Installer({prefix}).run().catch(err => {
     t.equal(err.message, 'cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.')
-
-    fixtureHelper.teardown()
-    t.end()
   })
 })
 
 test('throws error when package.json and package-lock.json do not match', t => {
-  const prefix = fixtureHelper.write(pkgName, {
-    'package.json': {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
       name: pkgName,
       version: pkgVersion,
       dependencies: { a: '1' }, // should generate error
       optionalDependencies: { b: '2' } // should generate warning
-    },
-    'package-lock.json': {
+    }),
+    'package-lock.json': File({
       version: pkgVersion + '-0',
       dependencies: {},
       lockfileVersion: 1
-    }
-  })
+    })
+  }))
+  fixture.create(prefix)
 
-  new Installer({prefix}).run().catch(err => {
+  return new Installer({prefix}).run().catch(err => {
     t.match(err.message, 'cipm can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync')
-    fixtureHelper.teardown()
-    t.end()
   })
 })
 
 test('throws error when old shrinkwrap is found', t => {
-  const prefix = fixtureHelper.write(pkgName, {
-    'package.json': {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
       name: pkgName,
       version: pkgVersion
-    },
-    'npm-shrinkwrap.json': {}
-  })
+    }),
+    'npm-shrinkwrap.json': File({})
+  }))
+  fixture.create(prefix)
 
-  new Installer({prefix}).run().catch(err => {
+  return new Installer({prefix}).run().catch(err => {
     t.equal(err.message, 'cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.')
-
-    fixtureHelper.teardown()
-    t.end()
   })
 })
 
 test('handles empty dependency list', t => {
-  const prefix = fixtureHelper.write(pkgName, {
-    'package.json': {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
       name: pkgName,
       version: pkgVersion
-    },
-    'package-lock.json': {
+    }),
+    'package-lock.json': File({
       dependencies: {},
       lockfileVersion: 1
-    }
-  })
+    })
+  }))
+  fixture.create(prefix)
 
-  new Installer({prefix}).run().then(details => {
+  return new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 0)
-
-    fixtureHelper.teardown()
-    t.end()
   })
 })
 
 test('handles dependency list with only shallow subdeps', t => {
-  const prefix = fixtureHelper.write(pkgName, {
-    'package.json': {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
       name: pkgName,
       version: pkgVersion,
       dependencies: {
         'a': '^1'
       }
-    },
-    'package-lock.json': {
+    }),
+    'package-lock.json': File({
       dependencies: {
         a: {
           version: '1.1.1'
         }
       },
       lockfileVersion: 1
-    }
-  })
+    })
+  }))
+  fixture.create(prefix)
 
   const aContents = 'var a = 1;'
 
-  extract = fixtureHelper.getWriter(pkgName, {
-    '/node_modules/a': {
-      'package.json': {
+  extract = (name, child, childPath, opts) => {
+    const files = new Tacks(Dir({
+      'package.json': File({
         name: pkgName,
         version: pkgVersion
-      },
-      'index.js': aContents
-    }
-  })
+      }),
+      'index.js': File(aContents)
+    }))
+    files.create(childPath)
+  }
 
-  new Installer({prefix}).run().then(details => {
+  return new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 1)
-    t.ok(fixtureHelper.equals(path.join(prefix, 'node_modules', 'a'), 'index.js', aContents))
-
-    fixtureHelper.teardown()
-    t.end()
+    const modPath = path.join(prefix, 'node_modules', 'a')
+    return fs.readFileAsync(path.join(modPath, 'index.js'), 'utf8')
+  }).then(extractedContents => {
+    t.equal(extractedContents, aContents, 'extracted data matches')
   })
 })
 
 test('handles dependency list with only deep subdeps', t => {
-  const prefix = fixtureHelper.write(pkgName, {
-    'package.json': {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
       name: pkgName,
       version: pkgVersion,
       dependencies: {
         a: '^1'
       }
-    },
-    'package-lock.json': {
+    }),
+    'package-lock.json': File({
       dependencies: {
         a: {
           version: '1.1.1',
@@ -175,36 +176,40 @@ test('handles dependency list with only deep subdeps', t => {
         }
       },
       lockfileVersion: 1
-    }
-  })
+    })
+  }))
+  fixture.create(prefix)
 
   const aContents = 'var a = 1;'
   const bContents = 'var b = 2;'
 
-  extract = fixtureHelper.getWriter(pkgName, {
-    '/node_modules/a': {
-      'package.json': {
-        name: pkgName,
-        version: pkgVersion
-      },
-      'index.js': aContents
-    },
-    '/node_modules/a/node_modules/b': {
-      'package.json': {
-        name: pkgName,
-        version: pkgVersion
-      },
-      'index.js': bContents
-    }
-  })
+  extract = (name, child, childPath, opts) => {
+    const files = new Tacks(Dir({
+      'package.json': File({
+        name: name,
+        version: child.version
+      }),
+      'index.js': File(name === 'a' ? aContents : bContents)
+    }))
+    files.create(childPath)
+  }
 
-  new Installer({prefix}).run().then(details => {
+  return new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 2)
-    t.ok(fixtureHelper.equals(path.join(prefix, 'node_modules', 'a'), 'index.js', aContents))
-    t.ok(fixtureHelper.equals(path.join(prefix, 'node_modules', 'a', 'node_modules', 'b'), 'index.js', bContents))
-
-    fixtureHelper.teardown()
-    t.end()
+    return BB.join(
+      fs.readFileAsync(
+        path.join(prefix, 'node_modules', 'a', 'index.js'),
+        'utf8'
+      ),
+      fs.readFileAsync(
+        path.join(prefix, 'node_modules', 'a', 'node_modules', 'b', 'index.js'),
+        'utf8'
+      ),
+      (a, b) => {
+        t.equal(a, aContents, 'first-level dep extracted correctly')
+        t.equal(b, bContents, 'nested dep extracted correctly')
+      }
+    )
   })
 })
 
@@ -212,8 +217,8 @@ test('runs lifecycle hooks of packages with env variables', t => {
   const originalConsoleLog = console.log
   console.log = () => {}
 
-  const prefix = fixtureHelper.write(pkgName, {
-    'package.json': {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
       name: pkgName,
       version: pkgVersion,
       scripts: {
@@ -226,18 +231,19 @@ test('runs lifecycle hooks of packages with env variables', t => {
       dependencies: {
         a: '^1'
       }
-    },
-    'package-lock.json': {
+    }),
+    'package-lock.json': File({
       dependencies: {
         a: { version: '1.0.0' }
       },
       lockfileVersion: 1
-    }
-  })
+    })
+  }))
+  fixture.create(prefix)
 
-  extract = fixtureHelper.getWriter(pkgName, {
-    '/node_modules/a': {
-      'package.json': {
+  extract = (name, child, childPath, opts) => {
+    const files = new Tacks(Dir({
+      'package.json': File({
         name: 'a',
         version: '1.0.0',
         scripts: {
@@ -247,9 +253,10 @@ test('runs lifecycle hooks of packages with env variables', t => {
           prepublish: writeEnvScript,
           prepare: writeEnvScript
         }
-      }
-    }
-  })
+      })
+    }))
+    files.create(childPath)
+  }
 
   return new Installer({prefix}).run().then(details => {
     t.equal(details.pkgCount, 1)
@@ -314,7 +321,7 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     }
   })
 
-  new Installer(opts).run().then(details => {
+  return new Installer(opts).run().then(details => {
     t.equal(details.pkgCount, 1)
     t.ok(fixtureHelper.missing(prefix, 'preinstall'))
     t.ok(fixtureHelper.missing(prefix, 'install'))
@@ -329,7 +336,6 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog
-    t.end()
   })
 })
 

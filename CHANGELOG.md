@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.7.0"></a>
+# [0.7.0](https://github.com/zkat/cipm/compare/v0.6.0...v0.7.0) (2017-10-12)
+
+
+### Bug Fixes
+
+* **lockfile:** npm-shrinkwrap takes precedence over package-lock (#28) ([3b98fb3](https://github.com/zkat/cipm/commit/3b98fb3))
+
+
+### Features
+
+* **optional:** ignore failed optional deps (#27) ([a654629](https://github.com/zkat/cipm/commit/a654629))
+
+
+
 <a name="0.6.0"></a>
 # [0.6.0](https://github.com/zkat/cipm/compare/v0.5.1...v0.6.0) (2017-10-09)
 

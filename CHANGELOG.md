@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.7.2"></a>
+## [0.7.2](https://github.com/zkat/cipm/compare/v0.7.1...v0.7.2) (2017-10-13)
+
+
+### Bug Fixes
+
+* **extract:** idk why this was breaking. Seriously. ([433a2be](https://github.com/zkat/cipm/commit/433a2be))
+* **tree:** pass through a custom Promise to logiTree ([2d29efb](https://github.com/zkat/cipm/commit/2d29efb))
+
+
+### Performance Improvements
+
+* zoomzoom. Even more concurrency! ([db9c2e0](https://github.com/zkat/cipm/commit/db9c2e0))
+
+
+
 <a name="0.7.1"></a>
 ## [0.7.1](https://github.com/zkat/cipm/compare/v0.7.0...v0.7.1) (2017-10-13)
 

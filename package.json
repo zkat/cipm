@@ -1,6 +1,6 @@
 {
   "name": "cipm",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "standalone ci-oriented package installer for npm",
   "main": "index.js",
   "bin": "bin/cli.js",

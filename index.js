@@ -36,11 +36,9 @@ class Installer {
 
   run () {
     return this.prepare()
-    .then(() => this.runScript('preinstall', this.pkg, this.prefix))
-    .then(() => this.extractTree(this.logicalTree))
-    .then(() => this.garbageCollect(this.logicalTree))
-    .then(() => this.runScript('install', this.pkg, this.prefix))
-    .then(() => this.runScript('postinstall', this.pkg, this.prefix))
+    .then(() => this.extractTree(this.tree))
+    .then(() => this.buildTree(this.tree))
+    .then(() => this.garbageCollect(this.tree))
     .then(() => this.runScript('prepublish', this.pkg, this.prefix))
     .then(() => this.runScript('prepare', this.pkg, this.prefix))
     .then(() => {
@@ -82,7 +80,7 @@ class Installer {
       )
     }).then(() => {
       // This needs to happen -after- we've done checkLock()
-      this.logicalTree = logi(this.pkg, this.pkg._shrinkwrap)
+      this.tree = logi(this.pkg, this.pkg._shrinkwrap)
     })
   }
 
@@ -110,22 +108,34 @@ class Installer {
   }
 
   extractTree (tree) {
-    const deps = tree.dependencies.values()
-    return BB.map(deps, child => {
-      if (child.pending) { return hasCycle(child) || child.pending }
-      if (child.dev && this.config.config.production) { return }
-      const childPath = path.join(
-        this.prefix,
-        'node_modules',
-        child.address.replace(/:/g, '/node_modules/')
-      )
-      child.pending = BB.resolve()
-      .then(() => extract.child(child.name, child, childPath, this.config))
-      .then(() => readPkgJson(path.join(childPath, 'package.json')))
+    return mapTree(tree, (dep, next) => {
+      if (dep.dev && this.config.config.production) { return }
+      const depPath = treePath(dep, this.prefix)
+      // Process children first, then extract this child
+      return BB.resolve()
+      .then(() => {
+        if (dep !== this.tree) {
+          // Don't try to extract the root
+          return extract.child(dep.name, dep, depPath, this.config)
+        }
+      })
+      .then(next)
+      .then(() => {
+        dep !== this.tree && this.pkgCount++
+      })
+    })
+  }
+
+  buildTree (tree) {
+    return mapTree(tree, (dep, next) => {
+      if (dep.dev && this.config.config.production) { return }
+      const depPath = treePath(dep, this.prefix)
+      return readPkgJson(path.join(depPath, 'package.json'))
       .then(pkg => {
-        return this.runScript('preinstall', pkg, childPath)
-        .then(() => this.extractTree(child))
-        .then(() => binLink(pkg, childPath, false, {
+        return this.runScript('preinstall', pkg, depPath)
+        .then(next) // build children between preinstall and binLink
+        .then(() => dep !== this.tree && // Don't link root bins
+        binLink(pkg, depPath, false, {
           force: this.config.config.force,
           ignoreScripts: this.config.lifecycleOpts.ignoreScripts,
           log: this.log,
@@ -135,24 +145,21 @@ class Installer {
           prefixes: [this.prefix],
           umask: this.config.config.umask
         }), e => {})
-        .then(() => this.runScript('install', pkg, childPath))
-        .then(() => this.runScript('postinstall', pkg, childPath))
+        .then(() => this.runScript('install', pkg, depPath))
+        .then(() => this.runScript('postinstall', pkg, depPath))
         .then(() => {
-          this.pkgCount++
           return this
         })
         .catch(e => {
-          if (child.optional) {
-            this.pkgCount++
-            this.failedDeps.add(child)
-            return rimraf(childPath)
+          if (dep.optional) {
+            this.failedDeps.add(dep)
+            return rimraf(depPath) // This should probably be gentlyRm
           } else {
             throw e
           }
         })
       })
-      return child.pending
-    }, { concurrency: 50 })
+    })
   }
 
   // A cute little mark-and-sweep collector!
@@ -165,7 +172,6 @@ class Installer {
     const failed = this.failedDeps
     const purged = this.purgedDeps
     mark(tree)
-    seen.clear()
     return sweep(tree)
 
     function mark (tree) {
@@ -180,22 +186,19 @@ class Installer {
     }
 
     function sweep (tree) {
-      return BB.map(tree.dependencies.values(), dep => {
-        if (seen.has(dep)) { return }
-        seen.add(dep)
-        return sweep(dep).then(() => {
-          if (!liveDeps.has(dep) && !purged.has(dep)) {
-            const depPath = path.join(
-              installer.prefix,
-              'node_modules',
-              dep.address.replace(/:/g, '/node_modules/')
-            )
+      return mapTree(tree, (dep, next) => {
+        return next().then(() => {
+          if (
+            dep !== installer.tree && // never purge root! 🙈
+            !liveDeps.has(dep) &&
+            !purged.has(dep)
+          ) {
             installer.pkgCount--
             purged.add(dep)
-            return rimraf(depPath)
+            return rimraf(treePath(dep, installer.prefix))
           }
         })
-      }, { concurrency: 100 })
+      })
     }
   }
 
@@ -225,6 +228,35 @@ function readJson (jsonPath, name, ignoreMissing) {
 
 function stripBOM (str) {
   return str.replace(/^\uFEFF/, '')
+}
+
+function treePath (tree, prefix) {
+  if (tree.address == null) {
+    // A tree missing its address is the root.
+    return prefix || ''
+  } else {
+    return path.join(
+      prefix || '.',
+      'node_modules',
+      tree.address.replace(/:/g, '/node_modules/')
+    )
+  }
+}
+
+// This provides a sort of async iterator for a tree
+function mapTree (tree, fn, opts, _seen) {
+  if (!opts) { opts = _seen || {concurrency: 50} }
+  if (!_seen) { _seen = new Map() }
+  if (_seen.has(tree)) {
+    return BB.resolve(hasCycle(tree)) || _seen.get(tree)
+  }
+  const pending = BB.resolve(fn(tree, () => {
+    return BB.map(tree.dependencies.values(), child => {
+      return mapTree(child, fn, opts, _seen)
+    }, opts)
+  }))
+  _seen.set(tree, pending)
+  return pending
 }
 
 function hasCycle (child, seen) {

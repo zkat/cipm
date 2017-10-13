@@ -264,6 +264,95 @@ test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
   })
 })
 
+test('links binaries for dependencies', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: {
+        a: '^1'
+      }
+    }),
+    'package-lock.json': File({
+      lockfileVersion: 1,
+      dependencies: {
+        a: {
+          version: '1.0.0',
+          requires: {
+            b: '2.0.0'
+          }
+        },
+        b: {
+          version: '2.0.0'
+        }
+      }
+    })
+  }))
+  fixture.create(prefix)
+
+  extract = (name, child, childPath, opts) => {
+    let files
+    if (child.name === 'a') {
+      files = new Tacks(Dir({
+        'package.json': File({
+          name: 'a',
+          version: '1.0.0',
+          bin: 'a',
+          dependencies: {
+            b: '^2'
+          }
+        }),
+        'a': File('hello')
+      }))
+    } else if (child.name === 'b') {
+      files = new Tacks(Dir({
+        'package.json': File({
+          name: 'b',
+          version: '2.0.0',
+          bin: 'b'
+        }),
+        'b': File('world')
+      }))
+    }
+    files.create(childPath)
+  }
+
+  const isWindows = process.platform === 'win32'
+  return new Installer({prefix}).run().then(details => {
+    const modP = path.join(prefix, 'node_modules')
+    if (isWindows) {
+      t.match(
+        fs.readFileSync(path.join(modP, '.bin', 'a'), 'utf8'),
+        /\$basedir/g,
+        'stub for a was installed'
+      )
+    } else {
+      t.equal(
+        fs.readFileSync(path.join(modP, '.bin', 'a'), 'utf8'),
+        'hello',
+        'binary for `a` installed at the top level .bin dir'
+      )
+    }
+    // This feels wrong, but is what npm itself does, and thus what things
+    // are expecting to be the case.
+    if (isWindows) {
+      t.match(
+        fs.readFileSync(path.join(modP, '.bin', 'b'), 'utf8'),
+        /\$basedir/g,
+        'stub for b was installed'
+      )
+    } else {
+      t.equal(
+        fs.readFileSync(
+          path.join(modP, '.bin', 'b'), 'utf8'
+        ),
+        isWindows ? /\$basedir/g : 'world',
+        'binary for transitive dep `b` installed at the toplevel'
+      )
+    }
+  })
+})
+
 test('removes failed optional dependencies', t => {
   const fixture = new Tacks(Dir({
     'package.json': File({

@@ -111,17 +111,12 @@ class Installer {
       if (dep.dev && this.config.config.production) { return }
       const depPath = dep.path(this.prefix)
       // Process children first, then extract this child
-      return BB.resolve()
-      .then(() => {
-        if (dep !== this.tree) {
-          // Don't try to extract the root
-          return extract.child(dep.name, dep, depPath, this.config)
-        }
-      })
-      .then(next)
-      .then(() => {
-        dep !== this.tree && this.pkgCount++
-      })
+      return BB.join(
+        !dep.isRoot && extract.child(
+          dep.name, dep, depPath, this.config
+        ).then(() => { this.pkgCount++ }),
+        next()
+      )
     }, {concurrency: 50, Promise: BB})
   }
 

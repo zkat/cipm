@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.7.1"></a>
+## [0.7.1](https://github.com/zkat/cipm/compare/v0.7.0...v0.7.1) (2017-10-13)
+
+
+### Bug Fixes
+
+* **scripts:** separate extract and build and fix ordering ([eb072a5](https://github.com/zkat/cipm/commit/eb072a5))
+
+
+
 <a name="0.7.0"></a>
 # [0.7.0](https://github.com/zkat/cipm/compare/v0.6.0...v0.7.0) (2017-10-12)
 

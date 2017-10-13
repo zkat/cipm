@@ -122,7 +122,7 @@ class Installer {
       .then(() => {
         dep !== this.tree && this.pkgCount++
       })
-    }, {concurrency: 50})
+    }, {concurrency: 50, Promise: BB})
   }
 
   buildTree (tree) {
@@ -157,7 +157,7 @@ class Installer {
           }
         })
       })
-    }, {concurrency: 50})
+    }, {concurrency: 50, Promise: BB})
   }
 
   // A cute little mark-and-sweep collector!
@@ -210,7 +210,7 @@ function sweep (tree, prefix, liveDeps) {
         return rimraf(dep.path(prefix))
       }
     })
-  }, {concurrency: 50}).then(() => purged)
+  }, {concurrency: 50, Promise: BB}).then(() => purged)
 }
 
 function stripBOM (str) {

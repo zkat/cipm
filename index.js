@@ -126,8 +126,8 @@ class Installer {
       .then(pkg => {
         return this.runScript('preinstall', pkg, depPath)
         .then(next) // build children between preinstall and binLink
-        .then(() => dep !== this.tree && // Don't link root bins
-        binLink(pkg, depPath, false, {
+        // Don't link root bins
+        .then(() => !dep.isRoot && binLink(pkg, depPath, false, {
           force: this.config.config.force,
           ignoreScripts: this.config.lifecycleOpts.ignoreScripts,
           log: this.log,
@@ -194,7 +194,7 @@ function sweep (tree, prefix, liveDeps) {
   return tree.forEachAsync((dep, next) => {
     return next().then(() => {
       if (
-        dep !== tree && // never purge root! 🙈
+        !dep.isRoot && // never purge root! 🙈
         !liveDeps.has(dep) &&
         !purged.has(dep)
       ) {

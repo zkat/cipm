@@ -112,11 +112,9 @@ class Installer {
       const depPath = dep.path(this.prefix)
       // Process children first, then extract this child
       return BB.join(
-        !dep.isRoot && extract.child(
-          dep.name, dep, depPath, this.config
-        ).then(() => { this.pkgCount++ }),
+        !dep.isRoot && extract.child(dep.name, dep, depPath, this.config),
         next()
-      )
+      ).then(() => { !dep.isRoot && this.pkgCount++ })
     }, {concurrency: 50, Promise: BB})
   }
 

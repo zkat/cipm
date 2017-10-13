@@ -166,7 +166,6 @@ class Installer {
     .then(purged => {
       this.purgedDeps = purged
       this.pkgCount -= purged.size
-      console.log('purged:', purged.size)
     })
   }
 

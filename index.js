@@ -31,7 +31,6 @@ class Installer {
     this.pkg = null
     this.tree = null
     this.failedDeps = new Set()
-    this.purgedDeps = new Set()
   }
 
   run () {
@@ -108,9 +107,9 @@ class Installer {
   }
 
   extractTree (tree) {
-    return mapTree(tree, (dep, next) => {
+    return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.config.production) { return }
-      const depPath = treePath(dep, this.prefix)
+      const depPath = dep.path(this.prefix)
       // Process children first, then extract this child
       return BB.resolve()
       .then(() => {
@@ -123,13 +122,13 @@ class Installer {
       .then(() => {
         dep !== this.tree && this.pkgCount++
       })
-    })
+    }, {concurrency: 50})
   }
 
   buildTree (tree) {
-    return mapTree(tree, (dep, next) => {
+    return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.config.production) { return }
-      const depPath = treePath(dep, this.prefix)
+      const depPath = dep.path(this.prefix)
       return readPkgJson(path.join(depPath, 'package.json'))
       .then(pkg => {
         return this.runScript('preinstall', pkg, depPath)
@@ -153,53 +152,27 @@ class Installer {
         .catch(e => {
           if (dep.optional) {
             this.failedDeps.add(dep)
-            return rimraf(depPath) // This should probably be gentlyRm
           } else {
             throw e
           }
         })
       })
-    })
+    }, {concurrency: 50})
   }
 
   // A cute little mark-and-sweep collector!
   garbageCollect (tree) {
     if (!this.failedDeps.size) { return }
-
-    const liveDeps = new Set()
-    const installer = this
-    const seen = new Set()
-    const failed = this.failedDeps
-    const purged = this.purgedDeps
-    mark(tree)
-    return sweep(tree)
-
-    function mark (tree) {
-      for (let dep of tree.dependencies.values()) {
-        if (seen.has(dep)) { continue }
-        seen.add(dep)
-        if (!failed.has(dep)) {
-          liveDeps.add(dep)
-          mark(dep)
-        }
-      }
-    }
-
-    function sweep (tree) {
-      return mapTree(tree, (dep, next) => {
-        return next().then(() => {
-          if (
-            dep !== installer.tree && // never purge root! 🙈
-            !liveDeps.has(dep) &&
-            !purged.has(dep)
-          ) {
-            installer.pkgCount--
-            purged.add(dep)
-            return rimraf(treePath(dep, installer.prefix))
-          }
-        })
-      })
-    }
+    return sweep(
+      tree,
+      this.prefix,
+      mark(tree, this.failedDeps)
+    )
+    .then(purged => {
+      this.purgedDeps = purged
+      this.pkgCount -= purged.size
+      console.log('purged:', purged.size)
+    })
   }
 
   runScript (stage, pkg, pkgPath) {
@@ -211,11 +184,40 @@ class Installer {
     return BB.resolve()
   }
 }
-
 module.exports = Installer
 
-module.exports._readJson = readJson
+function mark (tree, failed) {
+  const liveDeps = new Set()
+  tree.forEach((dep, next) => {
+    if (!failed.has(dep)) {
+      liveDeps.add(dep)
+      next()
+    }
+  })
+  return liveDeps
+}
 
+function sweep (tree, prefix, liveDeps) {
+  const purged = new Set()
+  return tree.forEachAsync((dep, next) => {
+    return next().then(() => {
+      if (
+        dep !== tree && // never purge root! 🙈
+        !liveDeps.has(dep) &&
+        !purged.has(dep)
+      ) {
+        purged.add(dep)
+        return rimraf(dep.path(prefix))
+      }
+    })
+  }, {concurrency: 50}).then(() => purged)
+}
+
+function stripBOM (str) {
+  return str.replace(/^\uFEFF/, '')
+}
+
+module.exports._readJson = readJson
 function readJson (jsonPath, name, ignoreMissing) {
   return readFileAsync(path.join(jsonPath, name), 'utf8')
   .then(str => JSON.parse(stripBOM(str)))
@@ -224,48 +226,4 @@ function readJson (jsonPath, name, ignoreMissing) {
       throw err
     }
   })
-}
-
-function stripBOM (str) {
-  return str.replace(/^\uFEFF/, '')
-}
-
-function treePath (tree, prefix) {
-  if (tree.address == null) {
-    // A tree missing its address is the root.
-    return prefix || ''
-  } else {
-    return path.join(
-      prefix || '.',
-      'node_modules',
-      tree.address.replace(/:/g, '/node_modules/')
-    )
-  }
-}
-
-// This provides a sort of async iterator for a tree
-function mapTree (tree, fn, opts, _seen) {
-  if (!opts) { opts = _seen || {concurrency: 50} }
-  if (!_seen) { _seen = new Map() }
-  if (_seen.has(tree)) {
-    return BB.resolve(hasCycle(tree)) || _seen.get(tree)
-  }
-  const pending = BB.resolve(fn(tree, () => {
-    return BB.map(tree.dependencies.values(), child => {
-      return mapTree(child, fn, opts, _seen)
-    }, opts)
-  }))
-  _seen.set(tree, pending)
-  return pending
-}
-
-function hasCycle (child, seen) {
-  seen = seen || new Set()
-  if (seen.has(child.address)) {
-    return true
-  } else {
-    seen.add(child.address)
-    const deps = Array.from(child.dependencies.values())
-    return deps.some(dep => hasCycle(dep, seen))
-  }
 }

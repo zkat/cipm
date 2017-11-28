@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.8.0"></a>
+# [0.8.0](https://github.com/zkat/cipm/compare/v0.7.2...v0.8.0) (2017-11-28)
+
+
+### Features
+
+* **gyp:** new npm-lifecycle[@2](https://github.com/2) with included node-gyp ([a4ed938](https://github.com/zkat/cipm/commit/a4ed938))
+
+
+
 <a name="0.7.2"></a>
 ## [0.7.2](https://github.com/zkat/cipm/compare/v0.7.1...v0.7.2) (2017-10-13)
 

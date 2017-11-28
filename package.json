@@ -51,7 +51,7 @@
     "bluebird": "^3.5.1",
     "graceful-fs": "^4.1.11",
     "lock-verify": "^1.1.0",
-    "npm-lifecycle": "^1.0.3",
+    "npm-lifecycle": "^2.0.0",
     "npm-logical-tree": "^1.2.0",
     "npm-package-arg": "^6.0.0",
     "npmlog": "^4.1.2",

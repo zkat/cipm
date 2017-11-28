@@ -47,7 +47,7 @@
     "yargs"
   ],
   "dependencies": {
-    "bin-links": "^1.0.0",
+    "bin-links": "^1.1.0",
     "bluebird": "^3.5.1",
     "graceful-fs": "^4.1.11",
     "lock-verify": "^1.1.0",
@@ -55,11 +55,11 @@
     "npm-logical-tree": "^1.2.0",
     "npm-package-arg": "^6.0.0",
     "npmlog": "^4.1.2",
-    "pacote": "^6.1.0",
+    "pacote": "^7.0.2",
     "read-package-json": "^2.0.12",
     "rimraf": "^2.6.2",
-    "worker-farm": "^1.5.0",
-    "yargs": "^9.0.1"
+    "worker-farm": "^1.5.2",
+    "yargs": "^10.0.3"
   },
   "devDependencies": {
     "mkdirp": "^0.5.1",

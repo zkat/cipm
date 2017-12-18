@@ -41,6 +41,7 @@
     "npm-logical-tree",
     "npm-package-arg",
     "npmlog",
+    "pacote",
     "read-package-json",
     "rimraf",
     "worker-farm",

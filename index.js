@@ -27,7 +27,7 @@ class Installer {
     this.pkgCount = 0
 
     // Misc
-    this.log = this.opts.log || require('npmlog')
+    this.log = this.opts.log || require('./lib/silentlog.js')
     this.pkg = null
     this.tree = null
     this.failedDeps = new Set()
@@ -55,7 +55,7 @@ class Installer {
       ? BB.resolve(this.config.get('prefix'))
       // There's some Special™ logic around the `--prefix` config when it
       // comes from a config file or env vs when it comes from the CLI
-      : process.argv.some(arg => arg.match(/--prefix/i))
+      : process.argv.some(arg => arg.match(/^\s*--prefix\s*/i))
       ? this.config.get('prefix')
       : getPrefix(process.cwd())
     )

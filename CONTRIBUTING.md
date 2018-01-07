@@ -1,21 +1,16 @@
 # Contributing
 
-Thank you so much for your interest in contributing!. All types of contributions are encouraged and valued. See below for different ways to help, and details about how this project handles them!
+## How do I... <a name="toc"></a>
 
-Please make sure to read the relevant section before making your contribution! It will make it a lot easier for us maintainers to make the most of it and smooth out the experience fo all involved. 💚
-
-The [Project Team](#join-the-project-team) looks forward to your contributions.~
-
-## How do I...
-
-* Ask or Say Something 🤔🐛😱
+* [Use This Guide](#introduction)?
+* Ask or Say Something? 🤔🐛😱
   * [Request Support](#request-support)
   * [Report an Error or Bug](#report-an-error-or-bug)
   * [Request a Feature](#request-a-feature)
-* Make Something 🤓👩🏽‍💻📜🍳
+* Make Something? 🤓👩🏽‍💻📜🍳
   * [Project Setup](#project-setup)
   * [Contribute Documentation](#contribute-documentation)
-  * [Contibute Code](#contribute-code)
+  * [Contribute Code](#contribute-code)
 * Manage Something ✅🙆🏼💃👔
   * [Provide Support on Issues](#provide-support-on-issues)
   * [Label Issues](#label-issues)
@@ -24,13 +19,21 @@ The [Project Team](#join-the-project-team) looks forward to your contributions.~
   * [Merge Pull Requests](#merge-pull-requests)
   * [Tag a Release](#tag-a-release)
   * [Join the Project Team](#join-the-project-team)
-* [Add a Guide Like This One To My Project](#Attribution) 🤖😻👻
+* Add a Guide Like This One [To My Project](#attribution)? 🤖😻👻
+
+## Introduction
+
+Thank you so much for your interest in contributing!. All types of contributions are encouraged and valued. See the [table of contents](#toc) for different ways to help and details about how this project handles them!📝
+
+Please make sure to read the relevant section before making your contribution! It will make it a lot easier for us maintainers to make the most of it and smooth out the experience for all involved. 💚
+
+The [Project Team](#join-the-project-team) looks forward to your contributions. 🙌🏾✨
 
 ## Request Support
 
 If you have a question about this project, how to use it, or just need clarification about something:
 
-* Open an Issue at https://github.com/wealljs/weallcontribute/issues
+* Open an Issue at https://github.com/zkat/cipm/issues
 * Provide as much context as you can about what you're running into.
 * Provide project and platform versions (nodejs, npm, etc), depending on what seems relevant. If not, please be ready to provide that information if maintainers ask for it.
 
@@ -44,7 +47,7 @@ Once it's filed:
 
 If you run into an error or bug with the project:
 
-* Open an Issue at https://github.com/wealljs/weallcontribute/issues
+* Open an Issue at https://github.com/zkat/cipm/issues
 * Include *reproduction steps* that someone else can follow to recreate the bug or error on their own.
 * Provide project and platform versions (nodejs, npm, etc), depending on what seems relevant. If not, please be ready to provide that information if maintainers ask for it.
 
@@ -60,7 +63,7 @@ Once it's filed:
 
 If the project doesn't do something you need or want it to do:
 
-* Open an Issue at https://github.com/wealljs/weallcontribute/issues
+* Open an Issue at https://github.com/zkat/cipm/issues
 * Provide as much context as you can about what you're running into.
 * Please try and be clear about why existing features and alternatives would not work for you.
 
@@ -104,7 +107,7 @@ To contribute documentation:
 * Re-read what you wrote, and run a spellchecker on it to make sure you didn't miss anything.
 * In your commit message(s), begin the first line with `docs: `. For example: `docs: Adding a doc contrib section to CONTRIBUTING.md`.
 * Write clear, concise commit message(s) using [conventional-changelog format](https://github.com/conventional-changelog/conventional-changelog-angular/blob/master/convention.md). Documentation commits should use `docs(<component>): <message>`.
-* Go to https://github.com/wealljs/weallcontribute/pulls and open a new pull request with your changes.
+* Go to https://github.com/zkat/cipm/pulls and open a new pull request with your changes.
 * If your PR is connected to an open issue, add a line in your PR's description that says `Fixes: #123`, where `#123` is the number of the issue you're fixing.
 
 Once you've filed the PR:
@@ -130,7 +133,7 @@ To contribute code:
 * Write tests that verify that your contribution works as expected.
 * Write clear, concise commit message(s) using [conventional-changelog format](https://github.com/conventional-changelog/conventional-changelog-angular/blob/master/convention.md).
 * Dependency updates, additions, or removals must be in individual commits, and the message must use the format: `<prefix>(deps): PKG@VERSION`, where `<prefix>` is any of the usual `conventional-changelog` prefixes, at your discretion.
-* Go to https://github.com/wealljs/weallcontribute/pulls and open a new pull request with your changes.
+* Go to https://github.com/zkat/cipm/pulls and open a new pull request with your changes.
 * If your PR is connected to an open issue, add a line in your PR's description that says `Fixes: #123`, where `#123` is the number of the issue you're fixing.
 
 Once you've filed the PR:
@@ -151,7 +154,7 @@ Sometimes, the `support` label will be added to things that turn out to actually
 
 In order to help other folks out with their questions:
 
-* Go to the issue tracker and [filter open issues by the `support` label](https://github.com/wealljs/weallcontribute/issues?q=is%3Aopen+is%3Aissue+label%3Asupport).
+* Go to the issue tracker and [filter open issues by the `support` label](https://github.com/zkat/cipm/issues?q=is%3Aopen+is%3Aissue+label%3Asupport).
 * Read through the list until you find something that you're familiar enough with to give an answer to.
 * Respond to the issue with whatever details are needed to clarify the question, or get more details about what's going on.
 * Once the discussion wraps up and things are clarified, either close the issue, or ask the original issue filer (or a maintainer) to close it for you.
@@ -168,7 +171,7 @@ Some notes on picking up support issues:
 
 One of the most important tasks in handling issues is labeling them usefully and accurately. All other tasks involving issues ultimately rely on the issue being classified in such a way that relevant parties looking to do their own tasks can find them quickly and easily.
 
-In order to label issues, [open up the list of unlabeled issues](https://github.com/wealljs/weallcontribute/issues?q=is%3Aopen+is%3Aissue+no%3Alabel) and, **from newest to oldest**, read through each one and apply issue labels according to the table below. If you're unsure about what label to apply, skip the issue and try the next one: don't feel obligated to label each and every issue yourself!
+In order to label issues, [open up the list of unlabeled issues](https://github.com/zkat/cipm/issues?q=is%3Aopen+is%3Aissue+no%3Alabel) and, **from newest to oldest**, read through each one and apply issue labels according to the table below. If you're unsure about what label to apply, skip the issue and try the next one: don't feel obligated to label each and every issue yourself!
 
 Label | Apply When | Notes
 --- | --- | ---
@@ -179,6 +182,8 @@ Label | Apply When | Notes
 `enhancement` | Added to [feature requests](#request-a-feature), PRs, or documentation issues that are purely additive: the code or docs currently work as expected, but a change is being requested or suggested. |
 `help wanted` | Applied by [Committers](#join-the-project-team) to issues and PRs that they would like to get outside help for. Generally, this means it's lower priority for the maintainer team to itself implement, but that the community is encouraged to pick up if they so desire | Never applied on first-pass labeling.
 `in-progress` | Applied by [Committers](#join-the-project-team) to PRs that are pending some work before they're ready for review. | The original PR submitter should @mention the team member that applied the label once the PR is complete.
+`performance` | This issue or PR is directly related to improving performance. |
+`refactor` | Added to issues or PRs that deal with cleaning up or modifying the project for the betterment of it. |
 `starter` | Applied by [Committers](#join-the-project-team) to issues that they consider good introductions to the project for people who have not contributed before. These are not necessarily "easy", but rather focused around how much context is necessary in order to understand what needs to be done for this project in particular. | Existing project members are expected to stay away from these unless they increase in priority.
 `support` | This issue is either asking a question about how to use the project, clarifying the reason for unexpected behavior, or possibly reporting a `bug` but does not have enough detail yet to determine whether it would count as such. | The label should be switched to `bug` if reliable reproduction steps are provided. Issues primarily with unintended configurations of a user's environment are not considered bugs, even if they cause crashes.
 `tests` | This issue or PR either requests or adds primarily tests to the project. | If a PR is pending tests, that will be handled through the [PR review process](#review-pull-requests)
@@ -201,7 +206,7 @@ To clean up issues and PRs:
   * not marked as `starter` or `help wanted` (these might stick around for a while, in general, as they're intended to be available)
   * no explicit messages in the comments asking for it to be left open
   * does not belong to a milestone
-* Leave a message when closing saying "Cleaning up stale issue. Please reopen or ping us if and when you're ready to resume this. See https://github.com/wealljs/weallcontribute/blob/latest/CONTRIBUTING.md#clean-up-issues-and-prs for more details."
+* Leave a message when closing saying "Cleaning up stale issue. Please reopen or ping us if and when you're ready to resume this. See https://github.com/zkat/cipm/blob/latest/CONTRIBUTING.md#clean-up-issues-and-prs for more details."
 
 ## Review Pull Requests
 
@@ -248,4 +253,4 @@ Admin/Owner | Granted to people ultimately responsible for the project, its comm
 
 ## Attribution
 
-This guide was generated using the WeAllJS CONTRIBUTING.md generator. [Make your own!](https://npm.im/weallcontribute)
+This guide was generated using the WeAllJS `CONTRIBUTING.md` generator. [Make your own](https://npm.im/weallcontribute)!

@@ -1,16 +1,13 @@
 {
-  "name": "cipm",
+  "name": "libcipm",
   "version": "0.9.1",
-  "description": "standalone ci-oriented package installer for npm",
+  "description": "programmatic API for cipm: a ci-oriented package installer for npm",
   "main": "index.js",
-  "bin": "bin/cli.js",
   "files": [
     "*.js",
-    "bin",
     "lib"
   ],
   "scripts": {
-    "docs": "tail -n +2 README.md | marked-man --manual 'User Commands' --version \"$npm_package_name@$npm_package_version\" > $npm_package_name.1",
     "prerelease": "npm t",
     "postrelease": "npm publish && git push --follow-tags",
     "pretest": "standard",
@@ -32,22 +29,6 @@
     "twitter": "maybekatz"
   },
   "license": "MIT",
-  "bundleDependencies": [
-    "bin-links",
-    "bluebird",
-    "graceful-fs",
-    "lock-verify",
-    "npm-lifecycle",
-    "npm-logical-tree",
-    "npm-package-arg",
-    "npmlog",
-    "pacote",
-    "read-package-json",
-    "rimraf",
-    "worker-farm",
-    "yargs",
-    "find-npm-prefix"
-  ],
   "dependencies": {
     "bin-links": "^1.1.0",
     "bluebird": "^3.5.1",
@@ -57,12 +38,10 @@
     "npm-lifecycle": "^2.0.0",
     "npm-logical-tree": "^1.2.0",
     "npm-package-arg": "^6.0.0",
-    "npmlog": "^4.1.2",
     "pacote": "^7.1.0",
     "read-package-json": "^2.0.12",
     "rimraf": "^2.6.2",
-    "worker-farm": "^1.5.2",
-    "yargs": "^10.0.3"
+    "worker-farm": "^1.5.2"
   },
   "devDependencies": {
     "mkdirp": "^0.5.1",

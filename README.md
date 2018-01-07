@@ -1,43 +1,37 @@
-[![npm](https://img.shields.io/npm/v/cipm.svg)](https://npm.im/cipm) [![license](https://img.shields.io/npm/l/cipm.svg)](https://npm.im/cipm) [![Travis](https://img.shields.io/travis/zkat/cipm.svg)](https://travis-ci.org/zkat/cipm) [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/zkat/cipm?svg=true)](https://ci.appveyor.com/project/zkat/cipm) [![Coverage Status](https://coveralls.io/repos/github/zkat/cipm/badge.svg?branch=latest)](https://coveralls.io/github/zkat/cipm?branch=latest)
+[![npm](https://img.shields.io/npm/v/libcipm.svg)](https://npm.im/libcipm) [![license](https://img.shields.io/npm/l/libcipm.svg)](https://npm.im/libcipm) [![Travis](https://img.shields.io/travis/zkat/cipm.svg)](https://travis-ci.org/zkat/cipm) [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/zkat/cipm?svg=true)](https://ci.appveyor.com/project/zkat/cipm) [![Coverage Status](https://coveralls.io/repos/github/zkat/cipm/badge.svg?branch=latest)](https://coveralls.io/github/zkat/cipm?branch=latest)
 
-## NOTE: this project is under active development. Please don't use it yet.
+[`libcipm`](https://github.com/zkat/cipm) installs npm projects in a way that's
+optimized for continuous integration/deployment/etc scenarios. It gives up
+the ability to build its own trees or install packages individually, as well
+as other user-oriented features, in exchange for speed, and being more strict
+about project state.
 
-# cipm(1) -- install npm dependencies from a package lock
+For documentation about the associated command-line tool, see
+[`cipm`](https://npm.im/cipm).
 
-## SYNOPSIS
+## Install
 
-`cipm [--userconfig <path>] [--ignore-scripts] [--offline] [--loglevel <level>]`
+`$ npm install libcipm`
 
-## INSTALL
+## Table of Contents
 
-`npm install [-g|-D] cipm`
+* [Features](#features)
+* [Contributing](#contributing)
+* [API](#api)
 
-## DESCRIPTION
+### Features
 
-When invoked inside an npm project with a `package.json` and `package-lock.json` (or an `npm-shrinkwrap.json`), it will install the specified dependencies and run their install scripts.
+* npm-compatible project installation
+* lifecycle script support
+* blazing fast
+* npm-compatible caching
+* errors if `package.json` and `package-lock.json` are out of sync, instead of fixing it like npm does. Essentially provides a `--frozen` install.
 
-The main difference between this and `npm install` is that `cipm` is both a small, standalone program, and that it can bypass a lot of the heavier machinery in npm oriented towards interacting with invalid states: `cipm` completely removes `node_modules` before beginning the install, if it exists.
+### Contributing
 
-`cipm` also requires that the current project have an existing lockfile, which must first be generated using `npm install` in `npm@5` or later versions (or any other package manager supporting `lockfileVersion@>=1`).
-
-This tool is ideal for using in CI environments that require regular, full installs of an application, but that are usually able to cache package data in a central cache.
-
-## EXAMPLES
-
-## AUTHOR
-
-Written by [Kat Marchan](https://github.com/zkat).
-
-## REPORTING BUGS
-
-Please file any relevant issues [on Github.](https://github.com/zkat/cipm)
-
-## LICENSE
-
-This work is released under the conditions of the MIT license. See LICENSE.md for more details.
-
-## SEE ALSO
-
-* `npm-install(1)`
-* `npm-package-locks(5)`
-* `package-lock.json(5)`
+The libcipm team enthusiastically welcomes contributions and project
+participation! There's a bunch of things you can do if you want to contribute!
+The [Contributor Guide](CONTRIBUTING.md) has all the information you need for
+everything from reporting bugs to contributing entire new features. Please don't
+hesitate to jump in if you'd like to, or even ask us questions if something
+isn't clear.

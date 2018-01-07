@@ -2,9 +2,9 @@
 
 'use strict'
 
-const config = require('../lib/config/npm-config.js')
 const yargs = require('yargs')
-const Installer = require('../index.js')
+const Installer = require('libcipm')
+const fromNpm = require('libcipm/lib/config/npm-config.js').fromNpm
 
 module.exports = cliMain
 
@@ -14,11 +14,16 @@ if (require.main === module) {
 
 function cliMain () {
   parseArgs()
-  return config.fromNpm(process.argv)
-  .then(c => new Installer({
-    config: c,
-    log: require('npmlog')
-  }).run())
+  const log = require('npmlog')
+  return fromNpm(process.argv)
+  .then(c => {
+    log.level = c.get('loglevel')
+    return new Installer({
+      config: c,
+      log
+    })
+  })
+  .then(cipm => cipm.run())
   .then(
     details => console.error(`added ${details.pkgCount} packages in ${
       details.runTime / 1000

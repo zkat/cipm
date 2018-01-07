@@ -48,6 +48,8 @@ class Installer {
   }
 
   prepare () {
+    this.log.level = this.config.get('loglevel')
+    this.log.silly('init', 'starting workers')
     extract.startWorkers()
 
     return (
@@ -61,6 +63,7 @@ class Installer {
     )
     .then(prefix => {
       this.prefix = prefix
+      this.log.silly('init', 'prefix: ' + prefix)
       return BB.join(
         readJson(prefix, 'package.json'),
         readJson(prefix, 'package-lock.json', true),
@@ -75,6 +78,10 @@ class Installer {
       path.join(this.prefix, 'node_modules')
     ).catch(err => { if (err.code !== 'ENOENT') { throw err } }))
     .then(stat => {
+      stat && this.log.warn(
+        'init', 'removing existing node_modules/ before installation'
+      )
+      this.log.silly('init', 'removing node_modules/ before install')
       return BB.join(
         this.checkLock(),
         stat && rimraf(path.join(this.prefix, 'node_modules'))
@@ -82,6 +89,7 @@ class Installer {
     }).then(() => {
       // This needs to happen -after- we've done checkLock()
       this.tree = logi(this.pkg, this.pkg._shrinkwrap)
+      this.log.silly('tree', this.tree)
     })
   }
 
@@ -90,6 +98,7 @@ class Installer {
   }
 
   checkLock () {
+    this.log.silly('checkLock', 'verifying package-lock data')
     const pkg = this.pkg
     const prefix = this.prefix
     if (!pkg._shrinkwrap || !pkg._shrinkwrap.lockfileVersion) {
@@ -99,7 +108,7 @@ class Installer {
     }
     return lockVerify(prefix).then(result => {
       if (result.status) {
-        result.warnings.forEach(w => console.error('Warning:', w))
+        result.warnings.forEach(w => this.log.warn('lockfile', w))
       } else {
         throw new Error(
           'cipm can only install packages when your package.json and package-lock.json or ' +
@@ -115,10 +124,12 @@ class Installer {
   }
 
   extractTree (tree) {
+    this.log.silly('extractTree', 'extracting dependencies to node_modules/')
     return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.get('production')) { return }
       const depPath = dep.path(this.prefix)
       // Process children first, then extract this child
+      !dep.isRoot && this.log.silly('extractTree', `${dep.name} -> ${depPath}`)
       return BB.join(
         !dep.isRoot &&
         extract.child(dep.name, dep, depPath, this.config, this.opts),
@@ -128,6 +139,7 @@ class Installer {
   }
 
   buildTree (tree) {
+    this.log.silly('buildTree', 'finalizing tree and running scripts')
     return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.get('production')) { return }
       const depPath = dep.path(this.prefix)

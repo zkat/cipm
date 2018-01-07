@@ -45,11 +45,13 @@
     "read-package-json",
     "rimraf",
     "worker-farm",
-    "yargs"
+    "yargs",
+    "find-npm-prefix"
   ],
   "dependencies": {
     "bin-links": "^1.1.0",
     "bluebird": "^3.5.1",
+    "find-npm-prefix": "^1.0.2",
     "graceful-fs": "^4.1.11",
     "lock-verify": "^1.1.0",
     "npm-lifecycle": "^2.0.0",

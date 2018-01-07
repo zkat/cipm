@@ -39,6 +39,7 @@
     "npm-logical-tree": "^1.2.0",
     "npm-package-arg": "^6.0.0",
     "pacote": "^7.1.0",
+    "protoduck": "^5.0.0",
     "read-package-json": "^2.0.12",
     "rimraf": "^2.6.2",
     "worker-farm": "^1.5.2"

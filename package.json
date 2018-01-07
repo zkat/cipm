@@ -64,12 +64,12 @@
   },
   "devDependencies": {
     "mkdirp": "^0.5.1",
-    "nyc": "^11.2.1",
+    "nyc": "^11.4.1",
     "require-inject": "^1.4.2",
     "standard": "^10.0.3",
-    "standard-version": "^4.2.0",
+    "standard-version": "^4.3.0",
     "tacks": "^1.2.6",
-    "tap": "^10.7.2",
+    "tap": "^11.0.1",
     "weallbehave": "^1.2.0",
     "weallcontribute": "^1.0.8"
   },

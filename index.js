@@ -34,7 +34,7 @@ class Installer {
   }
 
   run () {
-    const prefix = this.config.get('prefix')
+    const prefix = this.prefix
     return this.prepare()
     .then(() => this.extractTree(this.tree))
     .then(() => this.buildTree(this.tree))
@@ -72,12 +72,12 @@ class Installer {
       )
     })
     .then(() => statAsync(
-      path.join(this.config.get('prefix'), 'node_modules')
+      path.join(this.prefix, 'node_modules')
     ).catch(err => { if (err.code !== 'ENOENT') { throw err } }))
     .then(stat => {
       return BB.join(
         this.checkLock(),
-        stat && rimraf(path.join(this.config.get('prefix'), 'node_modules'))
+        stat && rimraf(path.join(this.prefix, 'node_modules'))
       )
     }).then(() => {
       // This needs to happen -after- we've done checkLock()
@@ -91,7 +91,7 @@ class Installer {
 
   checkLock () {
     const pkg = this.pkg
-    const prefix = this.config.get('prefix')
+    const prefix = this.prefix
     if (!pkg._shrinkwrap || !pkg._shrinkwrap.lockfileVersion) {
       return BB.reject(
         new Error(`cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.`)
@@ -109,13 +109,15 @@ class Installer {
           result.errors.join('\n') + '\n'
         )
       }
+    }).catch(err => {
+      throw err
     })
   }
 
   extractTree (tree) {
     return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.get('production')) { return }
-      const depPath = dep.path(this.config.get('prefix'))
+      const depPath = dep.path(this.prefix)
       // Process children first, then extract this child
       return BB.join(
         !dep.isRoot &&
@@ -128,7 +130,7 @@ class Installer {
   buildTree (tree) {
     return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.get('production')) { return }
-      const depPath = dep.path(this.config.get('prefix'))
+      const depPath = dep.path(this.prefix)
       return readPkgJson(path.join(depPath, 'package.json'))
       .then(pkg => {
         return this.runScript('preinstall', pkg, depPath)
@@ -140,8 +142,8 @@ class Installer {
           log: this.log,
           name: pkg.name,
           pkgId: pkg.name + '@' + pkg.version,
-          prefix: this.config.get('prefix'),
-          prefixes: [this.config.get('prefix')],
+          prefix: this.prefix,
+          prefixes: [this.prefix],
           umask: this.config.get('umask')
         }), e => {})
         .then(() => this.runScript('install', pkg, depPath))
@@ -163,7 +165,7 @@ class Installer {
     if (!this.failedDeps.size) { return }
     return sweep(
       tree,
-      this.config.get('prefix'),
+      this.prefix,
       mark(tree, this.failedDeps)
     )
     .then(purged => {

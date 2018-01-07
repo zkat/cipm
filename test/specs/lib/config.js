@@ -2,27 +2,23 @@
 
 const test = require('tap').test
 const requireInject = require('require-inject')
-const npmlog = require('npmlog')
 const childProcessFactory = require('../../lib/childProcessFactory.js')
 
-const dir = 'dir'
-
 let child
-const config = requireInject('../../../lib/config.js', {
+const config = requireInject('../../../lib/config/npm-config.js', {
   child_process: {
     spawn: () => child
   }
-})
+}).fromNpm
 
 function cleanup () {
   child = childProcessFactory()
-  config._resetConfig()
 }
 
 test('config: errors if npm is not found', t => {
   cleanup()
 
-  config(dir).catch(err => {
+  config().catch(err => {
     t.equal(err.message, '`npm` command not found. Please ensure you have npm@5.4.0 or later installed.')
     t.end()
   })
@@ -33,7 +29,7 @@ test('config: errors if npm is not found', t => {
 test('config: errors if npm config ls --json cant output json', t => {
   cleanup()
 
-  config(dir).catch(err => {
+  config().catch(err => {
     t.equal(err.message, '`npm config ls --json` failed to output json. Please ensure you have npm@5.4.0 or later installed.')
     t.end()
   })
@@ -49,7 +45,7 @@ test('config: errors if npm errors for any reason', t => {
 
   const errorMessage = 'failed to reticulate splines'
 
-  config(dir).catch(err => {
+  config().catch(err => {
     t.equal(err, errorMessage)
     t.end()
   })
@@ -62,33 +58,13 @@ test('config: parses configs from npm', t => {
 
   const expectedConfig = { a: 1, b: 2 }
 
-  config(dir).then(config => {
-    t.same(config.lifecycleOpts.config.a, expectedConfig.a)
-    t.same(config.lifecycleOpts.config.b, expectedConfig.b)
-    t.same(config.prefix, dir)
-    t.same(config.log, npmlog)
+  config().then(config => {
+    const objConf = {}
+    for (const k of config.keys()) {
+      objConf[k] = config.get(k)
+    }
+    t.deepEqual(objConf, expectedConfig, 'configs match')
     t.end()
-  })
-
-  child.stdout.emit('data', JSON.stringify(expectedConfig))
-  child.emit('close', 0)
-})
-
-test('config: uses a cached config from npm on subsequent invocations', t => {
-  cleanup()
-
-  const expectedConfig = { a: 1, b: 2 }
-  const unexpectedConfig = { a: 3, b: 4 }
-
-  config().then(config1 => {
-    child = childProcessFactory()
-    config().then(config2 => {
-      t.equal(config1, config2)
-      t.end()
-    })
-
-    child.stdout.emit('data', JSON.stringify(unexpectedConfig))
-    child.emit('close', 0)
   })
 
   child.stdout.emit('data', JSON.stringify(expectedConfig))

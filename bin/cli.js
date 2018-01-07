@@ -2,6 +2,7 @@
 
 'use strict'
 
+const config = require('../lib/config/npm-config.js')
 const yargs = require('yargs')
 const Installer = require('../index.js')
 
@@ -12,13 +13,18 @@ if (require.main === module) {
 }
 
 function cliMain () {
-  return new Installer(parseArgs()).run().then(details => {
-    console.error(`added ${details.pkgCount} packages in ${
+  parseArgs()
+  return config.fromNpm(process.argv)
+  .then(c => new Installer({
+    config: c,
+    log: require('npmlog')
+  }).run())
+  .then(
+    details => console.error(`added ${details.pkgCount} packages in ${
       details.runTime / 1000
-    }s`)
-  }, err => {
-    console.error(`Error!\n${err.message}\n${err.stack}`)
-  })
+    }s`),
+    err => console.error(`cipm failed:\n${err.message}\n${err.stack}`)
+  )
 }
 
 function parseArgs () {

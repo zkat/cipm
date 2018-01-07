@@ -2,6 +2,7 @@
 
 const BB = require('bluebird')
 
+const npmConfig = require('../../lib/config/npm-config.js')
 const fixtureHelper = require('../lib/fixtureHelper.js')
 const fs = BB.promisifyAll(require('fs'))
 const path = require('path')
@@ -31,13 +32,24 @@ const Installer = requireInject('../../index.js', {
   }
 })
 
+function run (moreOpts) {
+  return new Installer({
+    config: npmConfig.fromObject(Object.assign({}, {
+      global: true,
+      prefix,
+      'unsafe-perm': true, // this is the default when running non-root
+      loglevel: 'error'
+    }, moreOpts || {}))
+  }).run()
+}
+
 test('throws error when no package.json is found', t => {
   const fixture = new Tacks(Dir({
     'index.js': File('var a = 1')
   }))
   fixture.create(prefix)
 
-  return new Installer({prefix}).run().catch(err => {
+  return run().catch(err => {
     t.equal(err.code, 'ENOENT')
   })
 })
@@ -51,7 +63,7 @@ test('throws error when no package-lock nor shrinkwrap is found', t => {
   }))
   fixture.create(prefix)
 
-  return new Installer({prefix}).run().catch(err => {
+  return run().catch(err => {
     t.equal(err.message, 'cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.')
   })
 })
@@ -72,7 +84,7 @@ test('throws error when package.json and package-lock.json do not match', t => {
   }))
   fixture.create(prefix)
 
-  return new Installer({prefix}).run().catch(err => {
+  return run().catch(err => {
     t.match(err.message, 'cipm can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync')
   })
 })
@@ -87,7 +99,7 @@ test('throws error when old shrinkwrap is found', t => {
   }))
   fixture.create(prefix)
 
-  return new Installer({prefix}).run().catch(err => {
+  return run().catch(err => {
     t.equal(err.message, 'cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.')
   })
 })
@@ -105,7 +117,7 @@ test('handles empty dependency list', t => {
   }))
   fixture.create(prefix)
 
-  return new Installer({prefix}).run().then(details => {
+  return run().then(details => {
     t.equal(details.pkgCount, 0)
   })
 })
@@ -145,7 +157,7 @@ test('handles dependency list with only shallow subdeps', t => {
     files.create(childPath)
   }
 
-  return new Installer({prefix}).run().then(details => {
+  return run().then(details => {
     t.equal(details.pkgCount, 1)
     const modPath = path.join(prefix, 'node_modules', 'a')
     return fs.readFileAsync(path.join(modPath, 'index.js'), 'utf8')
@@ -196,7 +208,7 @@ test('handles dependency list with only deep subdeps', t => {
     files.create(childPath)
   }
 
-  return new Installer({prefix}).run().then(details => {
+  return run().then(details => {
     t.equal(details.pkgCount, 2)
     return BB.join(
       fs.readFileAsync(
@@ -253,7 +265,7 @@ test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
     files.create(childPath)
   }
 
-  return new Installer({prefix}).run().then(details => {
+  return run().then(details => {
     t.equal(details.pkgCount, 1)
     return fs.readFileAsync(path.join(prefix, 'node_modules', 'a', 'package.json'), 'utf8')
   }).then(pkgJson => {
@@ -318,7 +330,7 @@ test('links binaries for dependencies', t => {
   }
 
   const isWindows = process.platform === 'win32'
-  return new Installer({prefix}).run().then(details => {
+  return run().then(details => {
     const modP = path.join(prefix, 'node_modules')
     if (isWindows) {
       t.match(
@@ -443,7 +455,7 @@ test('removes failed optional dependencies', t => {
 
   const originalConsoleLog = console.log
   console.log = () => {}
-  return new Installer({prefix}).run().then(details => {
+  return run().then(details => {
     console.log = originalConsoleLog
     t.ok(true, 'installer succeeded even with optDep failure')
     t.equal(details.pkgCount, 2, 'only successful deps counted')
@@ -504,7 +516,7 @@ test('runs lifecycle hooks of packages with env variables', t => {
     files.create(childPath)
   }
 
-  return new Installer({prefix}).run().then(details => {
+  return run().then(details => {
     t.equal(details.pkgCount, 1)
     t.match(fixtureHelper.read(prefix, 'preinstall'), 'preinstall')
     t.match(fixtureHelper.read(prefix, 'install'), 'install')
@@ -546,10 +558,6 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
       lockfileVersion: 1
     }
   })
-  const opts = {
-    ignoreScripts: true,
-    prefix: prefix
-  }
 
   extract = fixtureHelper.getWriter(pkgName, {
     '/node_modules/a': {
@@ -567,7 +575,7 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     }
   })
 
-  return new Installer(opts).run().then(details => {
+  return run({prefix, 'ignore-scripts': true}).then(details => {
     t.equal(details.pkgCount, 1)
     t.ok(fixtureHelper.missing(prefix, 'preinstall'))
     t.ok(fixtureHelper.missing(prefix, 'install'))

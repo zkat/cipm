@@ -3,23 +3,23 @@
 const BB = require('bluebird')
 
 const binLink = require('bin-links')
-const config = require('./lib/config.js')
 const extract = require('./lib/extract.js')
 const fs = require('graceful-fs')
 const getPrefix = require('find-npm-prefix')
 const lifecycle = require('npm-lifecycle')
 const lockVerify = require('lock-verify')
 const logi = require('npm-logical-tree')
-const npmlog = require('npmlog')
 const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
 
 const readFileAsync = BB.promisify(fs.readFile)
+const statAsync = BB.promisify(fs.stat)
 
 class Installer {
   constructor (opts) {
     this.opts = opts
+    this.config = opts.config
 
     // Stats
     this.startTime = Date.now()
@@ -27,35 +27,36 @@ class Installer {
     this.pkgCount = 0
 
     // Misc
-    this.log = npmlog
+    this.log = this.opts.log || require('npmlog')
     this.pkg = null
     this.tree = null
     this.failedDeps = new Set()
   }
 
   run () {
+    const prefix = this.config.get('prefix')
     return this.prepare()
     .then(() => this.extractTree(this.tree))
     .then(() => this.buildTree(this.tree))
     .then(() => this.garbageCollect(this.tree))
-    .then(() => this.runScript('prepublish', this.pkg, this.prefix))
-    .then(() => this.runScript('prepare', this.pkg, this.prefix))
-    .then(() => {
-      extract.stopWorkers()
-      this.runTime = Date.now() - this.startTime
-      return this
-    }, e => {
-      extract.stopWorkers()
-      throw e
-    })
+    .then(() => this.runScript('prepublish', this.pkg, prefix))
+    .then(() => this.runScript('prepare', this.pkg, prefix))
+    .then(() => this.teardown())
+    .then(() => { this.runTime = Date.now() - this.startTime })
+    .catch(err => { this.teardown(); throw err })
+    .then(() => this)
   }
 
   prepare () {
     extract.startWorkers()
 
     return (
-      this.opts.prefix
-      ? BB.resolve(this.opts.prefix)
+      this.config.get('prefix') && this.config.get('global')
+      ? BB.resolve(this.config.get('prefix'))
+      // There's some Special™ logic around the `--prefix` config when it
+      // comes from a config file or env vs when it comes from the CLI
+      : process.argv.some(arg => arg.match(/--prefix/i))
+      ? this.config.get('prefix')
       : getPrefix(process.cwd())
     )
     .then(prefix => {
@@ -70,12 +71,13 @@ class Installer {
         }
       )
     })
-    .then(() => config(this.prefix, process.argv, this.pkg))
-    .then(conf => {
-      this.config = conf
+    .then(() => statAsync(
+      path.join(this.config.get('prefix'), 'node_modules')
+    ).catch(err => { if (err.code !== 'ENOENT') { throw err } }))
+    .then(stat => {
       return BB.join(
         this.checkLock(),
-        rimraf(path.join(this.prefix, 'node_modules'))
+        stat && rimraf(path.join(this.config.get('prefix'), 'node_modules'))
       )
     }).then(() => {
       // This needs to happen -after- we've done checkLock()
@@ -83,9 +85,13 @@ class Installer {
     })
   }
 
+  teardown () {
+    return extract.stopWorkers()
+  }
+
   checkLock () {
     const pkg = this.pkg
-    const prefix = this.prefix
+    const prefix = this.config.get('prefix')
     if (!pkg._shrinkwrap || !pkg._shrinkwrap.lockfileVersion) {
       return BB.reject(
         new Error(`cipm can only install packages with an existing package-lock.json or npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or later to generate it, then try again.`)
@@ -108,11 +114,12 @@ class Installer {
 
   extractTree (tree) {
     return tree.forEachAsync((dep, next) => {
-      if (dep.dev && this.config.config.production) { return }
-      const depPath = dep.path(this.prefix)
+      if (dep.dev && this.config.get('production')) { return }
+      const depPath = dep.path(this.config.get('prefix'))
       // Process children first, then extract this child
       return BB.join(
-        !dep.isRoot && extract.child(dep.name, dep, depPath, this.config),
+        !dep.isRoot &&
+        extract.child(dep.name, dep, depPath, this.config, this.opts),
         next()
       ).then(() => { !dep.isRoot && this.pkgCount++ })
     }, {concurrency: 50, Promise: BB})
@@ -120,28 +127,26 @@ class Installer {
 
   buildTree (tree) {
     return tree.forEachAsync((dep, next) => {
-      if (dep.dev && this.config.config.production) { return }
-      const depPath = dep.path(this.prefix)
+      if (dep.dev && this.config.get('production')) { return }
+      const depPath = dep.path(this.config.get('prefix'))
       return readPkgJson(path.join(depPath, 'package.json'))
       .then(pkg => {
         return this.runScript('preinstall', pkg, depPath)
         .then(next) // build children between preinstall and binLink
         // Don't link root bins
         .then(() => !dep.isRoot && binLink(pkg, depPath, false, {
-          force: this.config.config.force,
-          ignoreScripts: this.config.lifecycleOpts.ignoreScripts,
+          force: this.config.get('force'),
+          ignoreScripts: this.config.get('ignore-scripts'),
           log: this.log,
           name: pkg.name,
           pkgId: pkg.name + '@' + pkg.version,
-          prefix: this.prefix,
-          prefixes: [this.prefix],
-          umask: this.config.config.umask
+          prefix: this.config.get('prefix'),
+          prefixes: [this.config.get('prefix')],
+          umask: this.config.get('umask')
         }), e => {})
         .then(() => this.runScript('install', pkg, depPath))
         .then(() => this.runScript('postinstall', pkg, depPath))
-        .then(() => {
-          return this
-        })
+        .then(() => this)
         .catch(e => {
           if (dep.optional) {
             this.failedDeps.add(dep)
@@ -158,7 +163,7 @@ class Installer {
     if (!this.failedDeps.size) { return }
     return sweep(
       tree,
-      this.prefix,
+      this.config.get('prefix'),
       mark(tree, this.failedDeps)
     )
     .then(purged => {
@@ -168,15 +173,19 @@ class Installer {
   }
 
   runScript (stage, pkg, pkgPath) {
-    if (!this.config.lifecycleOpts.ignoreScripts && pkg.scripts && pkg.scripts[stage]) {
+    if (
+      !this.config.get('ignore-scripts') && pkg.scripts && pkg.scripts[stage]
+    ) {
       // TODO(mikesherov): remove pkg._id when npm-lifecycle no longer relies on it
       pkg._id = pkg.name + '@' + pkg.version
-      return lifecycle(pkg, stage, pkgPath, this.config.lifecycleOpts)
+      const opts = this.config.toLifecycle()
+      return lifecycle(pkg, stage, pkgPath, opts)
     }
     return BB.resolve()
   }
 }
 module.exports = Installer
+module.exports.CipmConfig = require('./lib/config/npm-config.js').CipmConfig
 
 function mark (tree, failed) {
   const liveDeps = new Set()

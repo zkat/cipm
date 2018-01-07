@@ -2,20 +2,19 @@
 
 const test = require('tap').test
 
-const pacoteOpts = require('../../../lib/pacote-opts.js')
+const npmConfig = require('../../../lib/config/npm-config.js')
+const pacoteOpts = require('../../../lib/config/pacote-opts.js')
 
 test('returns a config object usable by pacote', t => {
-  const opts = pacoteOpts({
-    config: {
-      ca: 'idk',
-      cache: '/foo',
-      'maxsockets': '10',
-      'fetch-retries': 23,
-      _authToken: 'deadbeef',
-      '//registry.npmjs.org:_authToken': 'c0ffee',
-      '@myscope:registry': 'https://my-other.registry.internet/'
-    }
-  }, {
+  const opts = pacoteOpts(npmConfig.fromObject({
+    ca: 'idk',
+    cache: '/foo',
+    'maxsockets': '10',
+    'fetch-retries': 23,
+    _authToken: 'deadbeef',
+    '//registry.npmjs.org:_authToken': 'c0ffee',
+    '@myscope:registry': 'https://my-other.registry.internet/'
+  }), {
     rootPkg: require('../../../package.json')
   })
 

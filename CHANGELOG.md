@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.9.0"></a>
+# [0.9.0](https://github.com/zkat/cipm/compare/v0.8.0...v0.9.0) (2018-01-07)
+
+
+### Bug Fixes
+
+* **package:** add pacote to bundleDependencies ([#36](https://github.com/zkat/cipm/issues/36)) ([a69742e](https://github.com/zkat/cipm/commit/a69742e))
+
+
+### Features
+
+* **config:** allow injection of npm configs ([#35](https://github.com/zkat/cipm/issues/35)) ([1f5694b](https://github.com/zkat/cipm/commit/1f5694b))
+
+
+
 <a name="0.8.0"></a>
 # [0.8.0](https://github.com/zkat/cipm/compare/v0.7.2...v0.8.0) (2017-11-28)
 

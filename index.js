@@ -8,7 +8,7 @@ const fs = require('graceful-fs')
 const getPrefix = require('find-npm-prefix')
 const lifecycle = require('npm-lifecycle')
 const lockVerify = require('lock-verify')
-const logi = require('npm-logical-tree')
+const buildLogicalTree = require('npm-logical-tree')
 const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
@@ -88,7 +88,7 @@ class Installer {
       )
     }).then(() => {
       // This needs to happen -after- we've done checkLock()
-      this.tree = logi(this.pkg, this.pkg._shrinkwrap)
+      this.tree = buildLogicalTree(this.pkg, this.pkg._shrinkwrap)
       this.log.silly('tree', this.tree)
     })
   }

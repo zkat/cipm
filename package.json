@@ -1,6 +1,6 @@
 {
   "name": "libcipm",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "programmatic API for cipm: a ci-oriented package installer for npm",
   "main": "index.js",
   "files": [

@@ -3,18 +3,21 @@
 const BB = require('bluebird')
 
 const binLink = require('bin-links')
+const buildLogicalTree = require('npm-logical-tree')
 const extract = require('./lib/extract.js')
 const fs = require('graceful-fs')
 const getPrefix = require('find-npm-prefix')
 const lifecycle = require('npm-lifecycle')
 const lockVerify = require('lock-verify')
-const buildLogicalTree = require('npm-logical-tree')
+const npa = require('npm-package-arg')
 const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
 
+const appendFileAsync = BB.promisify(fs.appendFile)
 const readFileAsync = BB.promisify(fs.readFile)
 const statAsync = BB.promisify(fs.stat)
+const truncateAsync = BB.promisify(fs.truncate)
 
 class Installer {
   constructor (opts) {
@@ -142,8 +145,17 @@ class Installer {
     this.log.silly('buildTree', 'finalizing tree and running scripts')
     return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.get('production')) { return }
+      const spec = npa.resolve(dep.name, dep.version)
       const depPath = dep.path(this.prefix)
       return readPkgJson(path.join(depPath, 'package.json'))
+      .then(pkg => {
+        if (!spec.registry) {
+          return this.updateFromField(dep, pkg)
+          .then(() => pkg)
+        } else {
+          return pkg
+        }
+      })
       .then(pkg => {
         return this.runScript('preinstall', pkg, depPath)
         .then(next) // build children between preinstall and binLink
@@ -170,6 +182,23 @@ class Installer {
         })
       })
     }, {concurrency: 50, Promise: BB})
+  }
+
+  updateFromField (dep, pkg) {
+    const depPath = dep.path(this.prefix)
+    const depPkgPath = path.join(depPath, 'package.json')
+    const parent = dep.requiredBy.values().next().value
+    const pkgPath = path.join(parent.path(this.prefix), 'package.json')
+    return readPkgJson(pkgPath)
+    .then(parentPkg =>
+      parentPkg.dependencies[dep.name] ||
+      parentPkg.devDependencies[dep.name] ||
+      parentPkg.optionalDependencies[dep.name]
+    )
+    .then(from => npa.resolve(dep.name, from))
+    .then(from => { pkg._from = from.toString() })
+    .then(() => truncateAsync(depPkgPath))
+    .then(() => appendFileAsync(depPkgPath, JSON.stringify(pkg, null, 2)))
   }
 
   // A cute little mark-and-sweep collector!

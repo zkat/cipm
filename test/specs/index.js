@@ -227,6 +227,49 @@ test('handles dependency list with only deep subdeps', t => {
   })
 })
 
+test('installs `directory` dependencies as symlinks', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: {
+        'a': 'file:a'
+      }
+    }),
+    'package-lock.json': File({
+      name: pkgName,
+      verson: pkgVersion,
+      dependencies: {
+        a: {
+          version: 'file:a'
+        }
+      },
+      lockfileVersion: 1
+    }),
+    'a': Dir({
+      'package.json': File({
+        name: 'a',
+        version: '1.2.3'
+      }),
+      'index.js': File('"hello"')
+    })
+  }))
+  fixture.create(prefix)
+
+  const modPath = path.join(prefix, 'node_modules', 'a')
+  return run().then(details => {
+    t.equal(details.pkgCount, 1)
+    return fs.lstatAsync(modPath)
+  })
+  .then(stat => t.ok(stat.isSymbolicLink(), '`a` is a symlink'))
+
+  .then(() => fs.realpathAsync(modPath))
+  .then(realpath => t.equal(realpath, path.join(prefix, 'a'), 'realpath ok'))
+
+  .then(() => fs.readFileAsync(path.join(modPath, 'index.js'), 'utf8'))
+  .then(data => t.equal(data, '"hello"', 'extracted data matches'))
+})
+
 test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
   const fixture = new Tacks(Dir({
     'package.json': File({

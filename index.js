@@ -9,6 +9,7 @@ const fs = require('graceful-fs')
 const getPrefix = require('find-npm-prefix')
 const lifecycle = require('npm-lifecycle')
 const lockVerify = require('lock-verify')
+const mkdirp = BB.promisify(require('mkdirp'))
 const npa = require('npm-package-arg')
 const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
@@ -17,6 +18,7 @@ const rimraf = BB.promisify(require('rimraf'))
 const appendFileAsync = BB.promisify(fs.appendFile)
 const readFileAsync = BB.promisify(fs.readFile)
 const statAsync = BB.promisify(fs.stat)
+const symlinkAsync = BB.promisify(fs.symlink)
 const truncateAsync = BB.promisify(fs.truncate)
 
 class Installer {
@@ -132,12 +134,50 @@ class Installer {
       if (dep.dev && this.config.get('production')) { return }
       const depPath = dep.path(this.prefix)
       // Process children first, then extract this child
-      !dep.isRoot && this.log.silly('extractTree', `${dep.name} -> ${depPath}`)
-      return BB.join(
-        !dep.isRoot &&
-        extract.child(dep.name, dep, depPath, this.config, this.opts),
-        next()
-      ).then(() => { !dep.isRoot && this.pkgCount++ })
+      const spec = npa.resolve(dep.name, dep.version, this.prefix)
+      if (dep.isRoot) {
+        return next()
+      } else if (spec.type === 'directory') {
+        const relative = path.relative(path.dirname(depPath), spec.fetchSpec)
+        this.log.silly('extractTree', `${dep.name}@${spec.fetchSpec} -> ${depPath} (symlink)`)
+        return mkdirp(path.dirname(depPath))
+        .then(() => symlinkAsync(relative, depPath, 'junction'))
+        .catch(
+          () => rimraf(depPath)
+          .then(() => symlinkAsync(relative, depPath, 'junction'))
+        ).then(() => next())
+        .then(() => { this.pkgCount++ })
+      } else {
+        this.log.silly('extractTree', `${dep.name}@${dep.version} -> ${depPath}`)
+        return (
+          dep.bundled
+          ? statAsync(depPath).catch(err => {
+            if (err.code !== 'ENOENT') { throw err }
+          })
+          : BB.resolve(false)
+        )
+        .then(wasBundled => {
+          const hasBundled = Array.from(dep.dependencies.values())
+          .some(d => d.bundled)
+
+          if (hasBundled) {
+            return BB.resolve(
+              wasBundled ||
+              extract.child(dep.name, dep, depPath, this.config, this.opts)
+            )
+            .then(next)
+          } else {
+            // If it has no bundled children, we can extract children
+            // concurrently
+            return BB.join(
+              wasBundled ||
+              extract.child(dep.name, dep, depPath, this.config, this.opts),
+              next()
+            )
+          }
+        })
+        .then(() => { this.pkgCount++ })
+      }
     }, {concurrency: 50, Promise: BB})
   }
 

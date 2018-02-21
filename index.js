@@ -133,7 +133,6 @@ class Installer {
     return tree.forEachAsync((dep, next) => {
       if (dep.dev && this.config.get('production')) { return }
       const depPath = dep.path(this.prefix)
-      // Process children first, then extract this child
       const spec = npa.resolve(dep.name, dep.version, this.prefix)
       if (dep.isRoot) {
         return next()

@@ -184,7 +184,7 @@ class Installer {
   buildTree (tree) {
     this.log.silly('buildTree', 'finalizing tree and running scripts')
     return tree.forEachAsync((dep, next) => {
-      if (dep.dev && this.config.get('production')) { return }
+      if (!this.checkDepEnv(dep)) { return }
       const spec = npa.resolve(dep.name, dep.version)
       const depPath = dep.path(this.prefix)
       return readPkgJson(path.join(depPath, 'package.json'))

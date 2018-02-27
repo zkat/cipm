@@ -3,6 +3,7 @@
 const BB = require('bluebird')
 
 const npmConfig = require('../../lib/config/npm-config.js')
+const npmlog = require('npmlog')
 const fixtureHelper = require('../lib/fixtureHelper.js')
 const fs = BB.promisifyAll(require('fs'))
 const path = require('path')
@@ -34,11 +35,12 @@ const Installer = requireInject('../../index.js', {
 
 function run (moreOpts) {
   return new Installer({
+    log: npmlog,
     config: npmConfig.fromObject(Object.assign({}, {
       global: true,
       prefix,
       'unsafe-perm': true, // this is the default when running non-root
-      loglevel: 'error'
+      loglevel: process.env.LOGLEVEL || 'error'
     }, moreOpts || {}))
   }).run()
 }
@@ -334,11 +336,15 @@ test('links binaries for dependencies', t => {
         a: {
           version: '1.0.0',
           requires: {
-            b: '2.0.0'
+            b: '2.0.0',
+            c: '1.0.0'
           }
         },
         b: {
           version: '2.0.0'
+        },
+        c: {
+          version: '1.0.0'
         }
       }
     })
@@ -354,7 +360,8 @@ test('links binaries for dependencies', t => {
           version: '1.0.0',
           bin: 'a',
           dependencies: {
-            b: '^2'
+            b: '^2',
+            c: '^1'
           }
         }),
         'a': File('hello')
@@ -367,6 +374,17 @@ test('links binaries for dependencies', t => {
           bin: 'b'
         }),
         'b': File('world')
+      }))
+    } else if (child.name === 'c') {
+      files = new Tacks(Dir({
+        'package.json': File({
+          name: 'c',
+          version: '1.0.0',
+          bin: {
+            'a': './c'
+          }
+        }),
+        'c': File('this is the bin for c')
       }))
     }
     files.create(childPath)

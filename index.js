@@ -50,7 +50,8 @@ class Installer {
     const prefix = this.prefix
     return this.timedStage('prepare')
     .then(() => this.timedStage('extractTree', this.tree))
-    .then(() => this.timedStage('buildTree', this.tree))
+    .then(() => this.timedStage('updateJson', this.tree))
+    .then(pkgJsons => this.timedStage('buildTree', this.tree, pkgJsons))
     .then(() => this.timedStage('garbageCollect', this.tree))
     .then(() => this.timedStage('runScript', 'prepublish', this.pkg, prefix))
     .then(() => this.timedStage('runScript', 'prepare', this.pkg, prefix))
@@ -205,45 +206,67 @@ class Installer {
     return (dep.dev && includeDev) || (!dep.dev && includeProd)
   }
 
-  buildTree (tree) {
+  updateJson (tree) {
+    this.log.verbose('updateJson', 'updating json deps to include _from')
+    const pkgJsons = new Map()
+    return tree.forEachAsync((dep, next) => {
+      if (!this.checkDepEnv(dep)) { return }
+      const spec = npa.resolve(dep.name, dep.version)
+      const depPath = dep.path(this.prefix)
+      return next()
+      .then(() => readJson(depPath, 'package.json'))
+      .then(pkg => spec.registry
+        ? pkg
+        : this.updateFromField(dep, pkg).then(() => pkg)
+      )
+      .tap(pkg => { pkgJsons.set(dep, pkg) })
+    }, {concurrency: 100, Promise: BB})
+    .then(() => pkgJsons)
+  }
+
+  buildTree (tree, pkgJsons) {
     this.log.verbose('buildTree', 'finalizing tree and running scripts')
     return tree.forEachAsync((dep, next) => {
       if (!this.checkDepEnv(dep)) { return }
       const spec = npa.resolve(dep.name, dep.version)
       const depPath = dep.path(this.prefix)
-      return readPkgJson(path.join(depPath, 'package.json'))
-      .then(pkg => {
-        if (!spec.registry) {
-          return this.updateFromField(dep, pkg)
-          .then(() => pkg)
-        } else {
-          return pkg
+      const pkg = pkgJsons.get(dep)
+      this.log.silly('buildTree', `linking ${spec}`)
+      return this.runScript('preinstall', pkg, depPath)
+      .then(next) // build children between preinstall and binLink
+      // Don't link root bins
+      .then(() => {
+        if (
+          dep.isRoot ||
+          !(pkg.bin || pkg.man || (pkg.directories && pkg.directories.bin))
+        ) {
+          // We skip the relatively expensive readPkgJson if there's no way
+          // we'll actually be linking any bins or mans
+          return
         }
-      })
-      .then(pkg => {
-        return this.runScript('preinstall', pkg, depPath)
-        .then(next) // build children between preinstall and binLink
-        // Don't link root bins
-        .then(() => !dep.isRoot && binLink(pkg, depPath, false, {
+        return readPkgJson(path.join(depPath, 'package.json'))
+        .then(pkg => binLink(pkg, depPath, false, {
           force: this.config.get('force'),
           ignoreScripts: this.config.get('ignore-scripts'),
-          log: Object.assign({}, this.log, {info: () => {}}),
+          log: Object.assign({}, this.log, { info: () => {} }),
           name: pkg.name,
           pkgId: pkg.name + '@' + pkg.version,
           prefix: this.prefix,
           prefixes: [this.prefix],
           umask: this.config.get('umask')
-        }), e => {})
-        .then(() => this.runScript('install', pkg, depPath))
-        .then(() => this.runScript('postinstall', pkg, depPath))
-        .then(() => this)
-        .catch(e => {
-          if (dep.optional) {
-            this.failedDeps.add(dep)
-          } else {
-            throw e
-          }
+        }), e => {
+          this.log.verbose('buildTree', `error linking ${spec}: ${e.message} ${e.stack}`)
         })
+      })
+      .then(() => this.runScript('install', pkg, depPath))
+      .then(() => this.runScript('postinstall', pkg, depPath))
+      .then(() => this)
+      .catch(e => {
+        if (dep.optional) {
+          this.failedDeps.add(dep)
+        } else {
+          throw e
+        }
       })
     }, {concurrency: 1, Promise: BB})
   }

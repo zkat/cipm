@@ -230,7 +230,7 @@ class Installer {
           }
         })
       })
-    }, {concurrency: 50, Promise: BB})
+    }, {concurrency: 1, Promise: BB})
   }
 
   updateFromField (dep, pkg) {

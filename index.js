@@ -29,6 +29,7 @@ class Installer {
     // Stats
     this.startTime = Date.now()
     this.runTime = 0
+    this.timings = {}
     this.pkgCount = 0
 
     // Misc
@@ -38,17 +39,25 @@ class Installer {
     this.failedDeps = new Set()
   }
 
+  timedStage (name) {
+    const start = Date.now()
+    return BB.resolve(this[name].apply(this, [].slice.call(arguments, 1)))
+    .tap(() => {
+      this.timings[name] = Date.now() - start
+      this.log.info(name, `Done in ${this.timings[name] / 1000}s`)
+    })
+  }
   run () {
     const prefix = this.prefix
-    return this.prepare()
-    .then(() => this.extractTree(this.tree))
-    .then(() => this.buildTree(this.tree))
-    .then(() => this.garbageCollect(this.tree))
-    .then(() => this.runScript('prepublish', this.pkg, prefix))
-    .then(() => this.runScript('prepare', this.pkg, prefix))
-    .then(() => this.teardown())
+    return this.timedStage('prepare')
+    .then(() => this.timedStage('extractTree', this.tree))
+    .then(() => this.timedStage('buildTree', this.tree))
+    .then(() => this.timedStage('garbageCollect', this.tree))
+    .then(() => this.timedStage('runScript', 'prepublish', this.pkg, prefix))
+    .then(() => this.timedStage('runScript', 'prepare', this.pkg, prefix))
+    .then(() => this.timedStage('teardown'))
     .then(() => { this.runTime = Date.now() - this.startTime })
-    .catch(err => { this.teardown(); throw err })
+    .catch(err => { this.timedStage('teardown'); throw err })
     .then(() => this)
   }
 

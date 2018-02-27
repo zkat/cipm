@@ -15,11 +15,10 @@ const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
 
-const appendFileAsync = BB.promisify(fs.appendFile)
 const readFileAsync = BB.promisify(fs.readFile)
 const statAsync = BB.promisify(fs.stat)
 const symlinkAsync = BB.promisify(fs.symlink)
-const truncateAsync = BB.promisify(fs.truncate)
+const writeFileAsync = BB.promisify(fs.writeFile)
 
 class Installer {
   constructor (opts) {
@@ -253,17 +252,16 @@ class Installer {
     const depPath = dep.path(this.prefix)
     const depPkgPath = path.join(depPath, 'package.json')
     const parent = dep.requiredBy.values().next().value
-    const pkgPath = path.join(parent.path(this.prefix), 'package.json')
-    return readPkgJson(pkgPath)
-    .then(parentPkg =>
-      parentPkg.dependencies[dep.name] ||
-      parentPkg.devDependencies[dep.name] ||
-      parentPkg.optionalDependencies[dep.name]
+    return readJson(parent.path(this.prefix), 'package.json')
+    .then(ppkg =>
+      (ppkg.dependencies && ppkg.dependencies[dep.name]) ||
+      (ppkg.devDependencies && ppkg.devDependencies[dep.name]) ||
+      (ppkg.optionalDependencies && ppkg.optionalDependencies[dep.name])
     )
     .then(from => npa.resolve(dep.name, from))
     .then(from => { pkg._from = from.toString() })
-    .then(() => truncateAsync(depPkgPath))
-    .then(() => appendFileAsync(depPkgPath, JSON.stringify(pkg, null, 2)))
+    .then(() => writeFileAsync(depPkgPath, JSON.stringify(pkg, null, 2)))
+    .then(pkg)
   }
 
   // A cute little mark-and-sweep collector!

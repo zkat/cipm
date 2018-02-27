@@ -62,8 +62,9 @@ class Installer {
   }
 
   prepare () {
+    this.log.info('prepare', 'initializing installer')
     this.log.level = this.config.get('loglevel')
-    this.log.silly('init', 'starting workers')
+    this.log.verbose('prepare', 'starting workers')
     extract.startWorkers()
 
     return (
@@ -77,12 +78,17 @@ class Installer {
     )
     .then(prefix => {
       this.prefix = prefix
-      this.log.silly('init', 'prefix: ' + prefix)
+      this.log.verbose('prepare', 'installation prefix: ' + prefix)
       return BB.join(
         readJson(prefix, 'package.json'),
         readJson(prefix, 'package-lock.json', true),
         readJson(prefix, 'npm-shrinkwrap.json', true),
         (pkg, lock, shrink) => {
+          if (shrink) {
+            this.log.verbose('prepare', 'using npm-shrinkwrap.json')
+          } else if (lock) {
+            this.log.verbose('prepare', 'using package-lock.json')
+          }
           pkg._shrinkwrap = shrink || lock
           this.pkg = pkg
         }
@@ -93,9 +99,8 @@ class Installer {
     ).catch(err => { if (err.code !== 'ENOENT') { throw err } }))
     .then(stat => {
       stat && this.log.warn(
-        'init', 'removing existing node_modules/ before installation'
+        'prepare', 'removing existing node_modules/ before installation'
       )
-      this.log.silly('init', 'removing node_modules/ before install')
       return BB.join(
         this.checkLock(),
         stat && rimraf(path.join(this.prefix, 'node_modules'))
@@ -108,11 +113,12 @@ class Installer {
   }
 
   teardown () {
+    this.log.verbose('teardown', 'shutting down workers.')
     return extract.stopWorkers()
   }
 
   checkLock () {
-    this.log.silly('checkLock', 'verifying package-lock data')
+    this.log.verbose('checkLock', 'verifying package-lock data')
     const pkg = this.pkg
     const prefix = this.prefix
     if (!pkg._shrinkwrap || !pkg._shrinkwrap.lockfileVersion) {
@@ -138,7 +144,7 @@ class Installer {
   }
 
   extractTree (tree) {
-    this.log.silly('extractTree', 'extracting dependencies to node_modules/')
+    this.log.verbose('extractTree', 'extracting dependencies to node_modules/')
     return tree.forEachAsync((dep, next) => {
       if (!this.checkDepEnv(dep)) { return }
       const depPath = dep.path(this.prefix)
@@ -191,7 +197,7 @@ class Installer {
   }
 
   buildTree (tree) {
-    this.log.silly('buildTree', 'finalizing tree and running scripts')
+    this.log.verbose('buildTree', 'finalizing tree and running scripts')
     return tree.forEachAsync((dep, next) => {
       if (!this.checkDepEnv(dep)) { return }
       const spec = npa.resolve(dep.name, dep.version)
@@ -212,7 +218,7 @@ class Installer {
         .then(() => !dep.isRoot && binLink(pkg, depPath, false, {
           force: this.config.get('force'),
           ignoreScripts: this.config.get('ignore-scripts'),
-          log: this.log,
+          log: Object.assign({}, this.log, {info: () => {}}),
           name: pkg.name,
           pkgId: pkg.name + '@' + pkg.version,
           prefix: this.prefix,

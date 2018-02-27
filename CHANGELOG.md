@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.4.1"></a>
+## [1.4.1](https://github.com/zkat/cipm/compare/v1.4.0...v1.4.1) (2018-02-27)
+
+
+### Bug Fixes
+
+* **buildTree:** linking in parallel causes hoist-clobbering ([5ffbc0e](https://github.com/zkat/cipm/commit/5ffbc0e)), closes [#39](https://github.com/zkat/cipm/issues/39)
+* **buildTree:** use checkDepEnv here too ([41a4634](https://github.com/zkat/cipm/commit/41a4634))
+* **perf:** split up updateJson and buildTree ([df5aba0](https://github.com/zkat/cipm/commit/df5aba0))
+* **perf:** stop using the readPackageJson version to update packages ([8da3d5a](https://github.com/zkat/cipm/commit/8da3d5a))
+
+
+
 <a name="1.4.0"></a>
 # [1.4.0](https://github.com/zkat/cipm/compare/v1.3.3...v1.4.0) (2018-02-21)
 

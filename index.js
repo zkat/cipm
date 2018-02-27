@@ -29,7 +29,7 @@ class Installer {
     // Stats
     this.startTime = Date.now()
     this.runTime = 0
-    this.timings = {}
+    this.timings = { scripts: 0 }
     this.pkgCount = 0
 
     // Misc
@@ -56,7 +56,17 @@ class Installer {
     .then(() => this.timedStage('runScript', 'prepublish', this.pkg, prefix))
     .then(() => this.timedStage('runScript', 'prepare', this.pkg, prefix))
     .then(() => this.timedStage('teardown'))
-    .then(() => { this.runTime = Date.now() - this.startTime })
+    .then(() => {
+      this.runTime = Date.now() - this.startTime
+      this.log.info(
+        'run-scripts',
+        `total script time: ${this.timings.scripts / 1000}s`
+      )
+      this.log.info(
+        'run-time',
+        `total run time: ${this.runTime / 1000}s`
+      )
+    })
     .catch(err => { this.timedStage('teardown'); throw err })
     .then(() => this)
   }
@@ -271,13 +281,15 @@ class Installer {
   }
 
   runScript (stage, pkg, pkgPath) {
+    const start = Date.now()
     if (
       !this.config.get('ignore-scripts') && pkg.scripts && pkg.scripts[stage]
     ) {
       // TODO(mikesherov): remove pkg._id when npm-lifecycle no longer relies on it
       pkg._id = pkg.name + '@' + pkg.version
       const opts = this.config.toLifecycle()
-      return lifecycle(pkg, stage, pkgPath, opts)
+      return BB.resolve(lifecycle(pkg, stage, pkgPath, opts))
+      .tap(() => { this.timings.scripts += Date.now() - start })
     }
     return BB.resolve()
   }

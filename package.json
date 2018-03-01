@@ -38,11 +38,11 @@
     "npm-lifecycle": "^2.0.0",
     "npm-logical-tree": "^1.2.1",
     "npm-package-arg": "^6.0.0",
-    "pacote": "^7.3.3",
+    "pacote": "^7.5.1",
     "protoduck": "^5.0.0",
     "read-package-json": "^2.0.12",
     "rimraf": "^2.6.2",
-    "worker-farm": "^1.5.2"
+    "worker-farm": "^1.5.4"
   },
   "devDependencies": {
     "mkdirp": "^0.5.1",

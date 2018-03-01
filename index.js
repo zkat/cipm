@@ -68,7 +68,14 @@ class Installer {
         `total run time: ${this.runTime / 1000}s`
       )
     })
-    .catch(err => { this.timedStage('teardown'); throw err })
+    .catch(err => {
+      this.timedStage('teardown')
+      if (err.message.match(/aggregate error/)) {
+        throw err[0]
+      } else {
+        throw err
+      }
+    })
     .then(() => this)
   }
 

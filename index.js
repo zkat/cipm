@@ -46,6 +46,7 @@ class Installer {
       this.log.info(name, `Done in ${this.timings[name] / 1000}s`)
     })
   }
+
   run () {
     const prefix = this.prefix
     return this.timedStage('prepare')
@@ -119,6 +120,11 @@ class Installer {
       // This needs to happen -after- we've done checkLock()
       this.tree = buildLogicalTree(this.pkg, this.pkg._shrinkwrap)
       this.log.silly('tree', this.tree)
+      this.expectedTotal = 0
+      this.tree.forEach((dep, next) => {
+        this.expectedTotal++
+        next()
+      })
     })
   }
 
@@ -155,6 +161,7 @@ class Installer {
 
   extractTree (tree) {
     this.log.verbose('extractTree', 'extracting dependencies to node_modules/')
+    const cg = this.log.newItem('extractTree', this.expectedTotal)
     return tree.forEachAsync((dep, next) => {
       if (!this.checkDepEnv(dep)) { return }
       const depPath = dep.path(this.prefix)
@@ -170,25 +177,36 @@ class Installer {
           () => rimraf(depPath)
           .then(() => symlinkAsync(relative, depPath, 'junction'))
         ).then(() => next())
-        .then(() => { this.pkgCount++ })
+        .then(() => {
+          this.pkgCount++
+          cg.completeWork(1)
+        })
       } else {
         this.log.silly('extractTree', `${dep.name}@${dep.version} -> ${depPath}`)
         return (
           dep.bundled
-          ? statAsync(depPath).catch(err => {
+          ? statAsync(path.join(depPath, 'package.json')).catch(err => {
             if (err.code !== 'ENOENT') { throw err }
           })
           : BB.resolve(false)
         )
-        .then(wasBundled => (
+        .then(wasBundled => {
           // Don't extract if a bundled dep is actually present
-          wasBundled ||
-          extract.child(dep.name, dep, depPath, this.config, this.opts)
-        ))
-        .then(next)
-        .then(() => { this.pkgCount++ })
+          if (wasBundled) {
+            cg.completeWork(1)
+            return next()
+          } else {
+            return BB.resolve(extract.child(
+              dep.name, dep, depPath, this.config, this.opts
+            ))
+            .then(() => cg.completeWork(1))
+            .then(() => { this.pkgCount++ })
+            .then(next)
+          }
+        })
       }
     }, {concurrency: 50, Promise: BB})
+    .then(() => cg.finish())
   }
 
   checkDepEnv (dep) {

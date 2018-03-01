@@ -1,6 +1,6 @@
 {
   "name": "cipm",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "a standalone ci-oriented package installer for npm projects",
   "bin": "./cli.js",
   "main": "./cli.js",
@@ -24,7 +24,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "libcipm": "^1.5.1",
+    "libcipm": "^1.6.0",
     "npmlog": "^4.1.2",
     "yargs": "^10.0.3"
   },

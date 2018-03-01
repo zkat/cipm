@@ -18,8 +18,8 @@ let extract = () => {}
 const pkgName = 'hark-a-package'
 const pkgVersion = '1.0.0'
 const writeEnvScript = process.platform === 'win32'
-                     ? 'echo %npm_lifecycle_event% > %npm_lifecycle_event%'
-                     : 'echo $npm_lifecycle_event > $npm_lifecycle_event'
+  ? 'echo %npm_lifecycle_event% > %npm_lifecycle_event%'
+  : 'echo $npm_lifecycle_event > $npm_lifecycle_event'
 
 const prefix = require('../lib/test-dir')(__filename)
 
@@ -263,13 +263,13 @@ test('installs `directory` dependencies as symlinks', t => {
     t.equal(details.pkgCount, 1)
     return fs.lstatAsync(modPath)
   })
-  .then(stat => t.ok(stat.isSymbolicLink(), '`a` is a symlink'))
+    .then(stat => t.ok(stat.isSymbolicLink(), '`a` is a symlink'))
 
-  .then(() => fs.realpathAsync(modPath))
-  .then(realpath => t.equal(realpath, path.join(prefix, 'a'), 'realpath ok'))
+    .then(() => fs.realpathAsync(modPath))
+    .then(realpath => t.equal(realpath, path.join(prefix, 'a'), 'realpath ok'))
 
-  .then(() => fs.readFileAsync(path.join(modPath, 'index.js'), 'utf8'))
-  .then(data => t.equal(data, '"hello"', 'extracted data matches'))
+    .then(() => fs.readFileAsync(path.join(modPath, 'index.js'), 'utf8'))
+    .then(data => t.equal(data, '"hello"', 'extracted data matches'))
 })
 
 test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
@@ -667,6 +667,6 @@ test('handles JSON docs that contain a BOM', t => {
   }
   // ensure that the file does indeed fail to be parsed by JSON.parse
   t.throws(() => JSON.parse(fs.readFileSync(path.join(bomJSONDir, bomJSON), 'utf8')),
-           {message: 'Unexpected token \uFEFF'})
+    {message: 'Unexpected token \uFEFF'})
   return Installer._readJson(bomJSONDir, bomJSON).then(obj => t.match(obj, actualJSON))
 })

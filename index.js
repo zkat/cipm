@@ -41,42 +41,42 @@ class Installer {
   timedStage (name) {
     const start = Date.now()
     return BB.resolve(this[name].apply(this, [].slice.call(arguments, 1)))
-    .tap(() => {
-      this.timings[name] = Date.now() - start
-      this.log.info(name, `Done in ${this.timings[name] / 1000}s`)
-    })
+      .tap(() => {
+        this.timings[name] = Date.now() - start
+        this.log.info(name, `Done in ${this.timings[name] / 1000}s`)
+      })
   }
 
   run () {
     const prefix = this.prefix
     return this.timedStage('prepare')
-    .then(() => this.timedStage('extractTree', this.tree))
-    .then(() => this.timedStage('updateJson', this.tree))
-    .then(pkgJsons => this.timedStage('buildTree', this.tree, pkgJsons))
-    .then(() => this.timedStage('garbageCollect', this.tree))
-    .then(() => this.timedStage('runScript', 'prepublish', this.pkg, prefix))
-    .then(() => this.timedStage('runScript', 'prepare', this.pkg, prefix))
-    .then(() => this.timedStage('teardown'))
-    .then(() => {
-      this.runTime = Date.now() - this.startTime
-      this.log.info(
-        'run-scripts',
-        `total script time: ${this.timings.scripts / 1000}s`
-      )
-      this.log.info(
-        'run-time',
-        `total run time: ${this.runTime / 1000}s`
-      )
-    })
-    .catch(err => {
-      this.timedStage('teardown')
-      if (err.message.match(/aggregate error/)) {
-        throw err[0]
-      } else {
-        throw err
-      }
-    })
-    .then(() => this)
+      .then(() => this.timedStage('extractTree', this.tree))
+      .then(() => this.timedStage('updateJson', this.tree))
+      .then(pkgJsons => this.timedStage('buildTree', this.tree, pkgJsons))
+      .then(() => this.timedStage('garbageCollect', this.tree))
+      .then(() => this.timedStage('runScript', 'prepublish', this.pkg, prefix))
+      .then(() => this.timedStage('runScript', 'prepare', this.pkg, prefix))
+      .then(() => this.timedStage('teardown'))
+      .then(() => {
+        this.runTime = Date.now() - this.startTime
+        this.log.info(
+          'run-scripts',
+          `total script time: ${this.timings.scripts / 1000}s`
+        )
+        this.log.info(
+          'run-time',
+          `total run time: ${this.runTime / 1000}s`
+        )
+      })
+      .catch(err => {
+        this.timedStage('teardown')
+        if (err.message.match(/aggregate error/)) {
+          throw err[0]
+        } else {
+          throw err
+        }
+      })
+      .then(() => this)
   }
 
   prepare () {
@@ -87,52 +87,52 @@ class Installer {
 
     return (
       this.config.get('prefix') && this.config.get('global')
-      ? BB.resolve(this.config.get('prefix'))
-      // There's some Special™ logic around the `--prefix` config when it
-      // comes from a config file or env vs when it comes from the CLI
-      : process.argv.some(arg => arg.match(/^\s*--prefix\s*/i))
-      ? this.config.get('prefix')
-      : getPrefix(process.cwd())
+        ? BB.resolve(this.config.get('prefix'))
+        // There's some Special™ logic around the `--prefix` config when it
+        // comes from a config file or env vs when it comes from the CLI
+        : process.argv.some(arg => arg.match(/^\s*--prefix\s*/i))
+          ? this.config.get('prefix')
+          : getPrefix(process.cwd())
     )
-    .then(prefix => {
-      this.prefix = prefix
-      this.log.verbose('prepare', 'installation prefix: ' + prefix)
-      return BB.join(
-        readJson(prefix, 'package.json'),
-        readJson(prefix, 'package-lock.json', true),
-        readJson(prefix, 'npm-shrinkwrap.json', true),
-        (pkg, lock, shrink) => {
-          if (shrink) {
-            this.log.verbose('prepare', 'using npm-shrinkwrap.json')
-          } else if (lock) {
-            this.log.verbose('prepare', 'using package-lock.json')
+      .then(prefix => {
+        this.prefix = prefix
+        this.log.verbose('prepare', 'installation prefix: ' + prefix)
+        return BB.join(
+          readJson(prefix, 'package.json'),
+          readJson(prefix, 'package-lock.json', true),
+          readJson(prefix, 'npm-shrinkwrap.json', true),
+          (pkg, lock, shrink) => {
+            if (shrink) {
+              this.log.verbose('prepare', 'using npm-shrinkwrap.json')
+            } else if (lock) {
+              this.log.verbose('prepare', 'using package-lock.json')
+            }
+            pkg._shrinkwrap = shrink || lock
+            this.pkg = pkg
           }
-          pkg._shrinkwrap = shrink || lock
-          this.pkg = pkg
-        }
-      )
-    })
-    .then(() => statAsync(
-      path.join(this.prefix, 'node_modules')
-    ).catch(err => { if (err.code !== 'ENOENT') { throw err } }))
-    .then(stat => {
-      stat && this.log.warn(
-        'prepare', 'removing existing node_modules/ before installation'
-      )
-      return BB.join(
-        this.checkLock(),
-        stat && rimraf(path.join(this.prefix, 'node_modules'))
-      )
-    }).then(() => {
-      // This needs to happen -after- we've done checkLock()
-      this.tree = buildLogicalTree(this.pkg, this.pkg._shrinkwrap)
-      this.log.silly('tree', this.tree)
-      this.expectedTotal = 0
-      this.tree.forEach((dep, next) => {
-        this.expectedTotal++
-        next()
+        )
       })
-    })
+      .then(() => statAsync(
+        path.join(this.prefix, 'node_modules')
+      ).catch(err => { if (err.code !== 'ENOENT') { throw err } }))
+      .then(stat => {
+        stat && this.log.warn(
+          'prepare', 'removing existing node_modules/ before installation'
+        )
+        return BB.join(
+          this.checkLock(),
+          stat && rimraf(path.join(this.prefix, 'node_modules'))
+        )
+      }).then(() => {
+      // This needs to happen -after- we've done checkLock()
+        this.tree = buildLogicalTree(this.pkg, this.pkg._shrinkwrap)
+        this.log.silly('tree', this.tree)
+        this.expectedTotal = 0
+        this.tree.forEach((dep, next) => {
+          this.expectedTotal++
+          next()
+        })
+      })
   }
 
   teardown () {
@@ -179,41 +179,41 @@ class Installer {
         const relative = path.relative(path.dirname(depPath), spec.fetchSpec)
         this.log.silly('extractTree', `${dep.name}@${spec.fetchSpec} -> ${depPath} (symlink)`)
         return mkdirp(path.dirname(depPath))
-        .then(() => symlinkAsync(relative, depPath, 'junction'))
-        .catch(
-          () => rimraf(depPath)
           .then(() => symlinkAsync(relative, depPath, 'junction'))
-        ).then(() => next())
-        .then(() => {
-          this.pkgCount++
-          cg.completeWork(1)
-        })
+          .catch(
+            () => rimraf(depPath)
+              .then(() => symlinkAsync(relative, depPath, 'junction'))
+          ).then(() => next())
+          .then(() => {
+            this.pkgCount++
+            cg.completeWork(1)
+          })
       } else {
         this.log.silly('extractTree', `${dep.name}@${dep.version} -> ${depPath}`)
         return (
           dep.bundled
-          ? statAsync(path.join(depPath, 'package.json')).catch(err => {
-            if (err.code !== 'ENOENT') { throw err }
-          })
-          : BB.resolve(false)
+            ? statAsync(path.join(depPath, 'package.json')).catch(err => {
+              if (err.code !== 'ENOENT') { throw err }
+            })
+            : BB.resolve(false)
         )
-        .then(wasBundled => {
+          .then(wasBundled => {
           // Don't extract if a bundled dep is actually present
-          if (wasBundled) {
-            cg.completeWork(1)
-            return next()
-          } else {
-            return BB.resolve(extract.child(
-              dep.name, dep, depPath, this.config, this.opts
-            ))
-            .then(() => cg.completeWork(1))
-            .then(() => { this.pkgCount++ })
-            .then(next)
-          }
-        })
+            if (wasBundled) {
+              cg.completeWork(1)
+              return next()
+            } else {
+              return BB.resolve(extract.child(
+                dep.name, dep, depPath, this.config, this.opts
+              ))
+                .then(() => cg.completeWork(1))
+                .then(() => { this.pkgCount++ })
+                .then(next)
+            }
+          })
       }
     }, {concurrency: 50, Promise: BB})
-    .then(() => cg.finish())
+      .then(() => cg.finish())
   }
 
   checkDepEnv (dep) {
@@ -239,14 +239,14 @@ class Installer {
       const spec = npa.resolve(dep.name, dep.version)
       const depPath = dep.path(this.prefix)
       return next()
-      .then(() => readJson(depPath, 'package.json'))
-      .then(pkg => (spec.registry || spec.type === 'directory')
-        ? pkg
-        : this.updateFromField(dep, pkg).then(() => pkg)
-      )
-      .tap(pkg => { pkgJsons.set(dep, pkg) })
+        .then(() => readJson(depPath, 'package.json'))
+        .then(pkg => (spec.registry || spec.type === 'directory')
+          ? pkg
+          : this.updateFromField(dep, pkg).then(() => pkg)
+        )
+        .tap(pkg => { pkgJsons.set(dep, pkg) })
     }, {concurrency: 100, Promise: BB})
-    .then(() => pkgJsons)
+      .then(() => pkgJsons)
   }
 
   buildTree (tree, pkgJsons) {
@@ -258,41 +258,41 @@ class Installer {
       const pkg = pkgJsons.get(dep)
       this.log.silly('buildTree', `linking ${spec}`)
       return this.runScript('preinstall', pkg, depPath)
-      .then(next) // build children between preinstall and binLink
+        .then(next) // build children between preinstall and binLink
       // Don't link root bins
-      .then(() => {
-        if (
-          dep.isRoot ||
+        .then(() => {
+          if (
+            dep.isRoot ||
           !(pkg.bin || pkg.man || (pkg.directories && pkg.directories.bin))
-        ) {
+          ) {
           // We skip the relatively expensive readPkgJson if there's no way
           // we'll actually be linking any bins or mans
-          return
-        }
-        return readPkgJson(path.join(depPath, 'package.json'))
-        .then(pkg => binLink(pkg, depPath, false, {
-          force: this.config.get('force'),
-          ignoreScripts: this.config.get('ignore-scripts'),
-          log: Object.assign({}, this.log, { info: () => {} }),
-          name: pkg.name,
-          pkgId: pkg.name + '@' + pkg.version,
-          prefix: this.prefix,
-          prefixes: [this.prefix],
-          umask: this.config.get('umask')
-        }), e => {
-          this.log.verbose('buildTree', `error linking ${spec}: ${e.message} ${e.stack}`)
+            return
+          }
+          return readPkgJson(path.join(depPath, 'package.json'))
+            .then(pkg => binLink(pkg, depPath, false, {
+              force: this.config.get('force'),
+              ignoreScripts: this.config.get('ignore-scripts'),
+              log: Object.assign({}, this.log, { info: () => {} }),
+              name: pkg.name,
+              pkgId: pkg.name + '@' + pkg.version,
+              prefix: this.prefix,
+              prefixes: [this.prefix],
+              umask: this.config.get('umask')
+            }), e => {
+              this.log.verbose('buildTree', `error linking ${spec}: ${e.message} ${e.stack}`)
+            })
         })
-      })
-      .then(() => this.runScript('install', pkg, depPath))
-      .then(() => this.runScript('postinstall', pkg, depPath))
-      .then(() => this)
-      .catch(e => {
-        if (dep.optional) {
-          this.failedDeps.add(dep)
-        } else {
-          throw e
-        }
-      })
+        .then(() => this.runScript('install', pkg, depPath))
+        .then(() => this.runScript('postinstall', pkg, depPath))
+        .then(() => this)
+        .catch(e => {
+          if (dep.optional) {
+            this.failedDeps.add(dep)
+          } else {
+            throw e
+          }
+        })
     }, {concurrency: 1, Promise: BB})
   }
 
@@ -301,15 +301,15 @@ class Installer {
     const depPkgPath = path.join(depPath, 'package.json')
     const parent = dep.requiredBy.values().next().value
     return readJson(parent.path(this.prefix), 'package.json')
-    .then(ppkg =>
-      (ppkg.dependencies && ppkg.dependencies[dep.name]) ||
+      .then(ppkg =>
+        (ppkg.dependencies && ppkg.dependencies[dep.name]) ||
       (ppkg.devDependencies && ppkg.devDependencies[dep.name]) ||
       (ppkg.optionalDependencies && ppkg.optionalDependencies[dep.name])
-    )
-    .then(from => npa.resolve(dep.name, from))
-    .then(from => { pkg._from = from.toString() })
-    .then(() => writeFileAsync(depPkgPath, JSON.stringify(pkg, null, 2)))
-    .then(pkg)
+      )
+      .then(from => npa.resolve(dep.name, from))
+      .then(from => { pkg._from = from.toString() })
+      .then(() => writeFileAsync(depPkgPath, JSON.stringify(pkg, null, 2)))
+      .then(pkg)
   }
 
   // A cute little mark-and-sweep collector!
@@ -320,10 +320,10 @@ class Installer {
       this.prefix,
       mark(tree, this.failedDeps)
     )
-    .then(purged => {
-      this.purgedDeps = purged
-      this.pkgCount -= purged.size
-    })
+      .then(purged => {
+        this.purgedDeps = purged
+        this.pkgCount -= purged.size
+      })
   }
 
   runScript (stage, pkg, pkgPath) {
@@ -335,7 +335,7 @@ class Installer {
       pkg._id = pkg.name + '@' + pkg.version
       const opts = this.config.toLifecycle()
       return BB.resolve(lifecycle(pkg, stage, pkgPath, opts))
-      .tap(() => { this.timings.scripts += Date.now() - start })
+        .tap(() => { this.timings.scripts += Date.now() - start })
     }
     return BB.resolve()
   }
@@ -377,10 +377,10 @@ function stripBOM (str) {
 module.exports._readJson = readJson
 function readJson (jsonPath, name, ignoreMissing) {
   return readFileAsync(path.join(jsonPath, name), 'utf8')
-  .then(str => JSON.parse(stripBOM(str)))
-  .catch({code: 'ENOENT'}, err => {
-    if (!ignoreMissing) {
-      throw err
-    }
-  })
+    .then(str => JSON.parse(stripBOM(str)))
+    .catch({code: 'ENOENT'}, err => {
+      if (!ignoreMissing) {
+        throw err
+      }
+    })
 }

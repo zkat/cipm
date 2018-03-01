@@ -1,7 +1,5 @@
 [![npm](https://img.shields.io/npm/v/cipm.svg)](https://npm.im/cipm) [![license](https://img.shields.io/npm/l/cipm.svg)](https://npm.im/cipm) [![Travis](https://img.shields.io/travis/zkat/cipm.svg)](https://travis-ci.org/zkat/cipm) [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/zkat/cipm?svg=true)](https://ci.appveyor.com/project/zkat/cipm) [![Coverage Status](https://coveralls.io/repos/github/zkat/cipm/badge.svg?branch=latest)](https://coveralls.io/github/zkat/cipm?branch=latest)
 
-## NOTE: this project is under active development. Please don't use it yet.
-
 # cipm(1) -- install npm dependencies from a package lock
 
 ## SYNOPSIS

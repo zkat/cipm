@@ -240,7 +240,7 @@ class Installer {
       const depPath = dep.path(this.prefix)
       return next()
       .then(() => readJson(depPath, 'package.json'))
-      .then(pkg => spec.registry
+      .then(pkg => (spec.registry || spec.type === 'directory')
         ? pkg
         : this.updateFromField(dep, pkg).then(() => pkg)
       )

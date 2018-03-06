@@ -29,8 +29,8 @@ function cliMain () {
         details.runTime / 1000
       }s`),
       err => {
-        console.error(`cipm failed:\n${err.message}\n${err.stack}`);
-        process.exitCode = 1;
+        console.error(`cipm failed:\n${err.message}\n${err.stack}`)
+        process.exitCode = 1
       }
     )
 }

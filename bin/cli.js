@@ -28,7 +28,10 @@ function cliMain () {
       details => console.error(`added ${details.pkgCount} packages in ${
         details.runTime / 1000
       }s`),
-      err => console.error(`cipm failed:\n${err.message}\n${err.stack}`)
+      err => {
+        console.error(`cipm failed:\n${err.message}\n${err.stack}`);
+        process.exitCode = 1;
+      }
     )
 }
 

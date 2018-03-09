@@ -328,9 +328,7 @@ class Installer {
 
   runScript (stage, pkg, pkgPath) {
     const start = Date.now()
-    if (
-      !this.config.get('ignore-scripts') && pkg.scripts && pkg.scripts[stage]
-    ) {
+    if (!this.config.get('ignore-scripts')) {
       // TODO(mikesherov): remove pkg._id when npm-lifecycle no longer relies on it
       pkg._id = pkg.name + '@' + pkg.version
       const opts = this.config.toLifecycle()

@@ -91,7 +91,7 @@ class Installer {
         // There's some Special™ logic around the `--prefix` config when it
         // comes from a config file or env vs when it comes from the CLI
         : process.argv.some(arg => arg.match(/^\s*--prefix\s*/i))
-          ? this.config.get('prefix')
+          ? BB.resolve(this.config.get('prefix'))
           : getPrefix(process.cwd())
     )
       .then(prefix => {

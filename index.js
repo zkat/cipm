@@ -48,14 +48,13 @@ class Installer {
   }
 
   run () {
-    const prefix = this.prefix
     return this.timedStage('prepare')
       .then(() => this.timedStage('extractTree', this.tree))
       .then(() => this.timedStage('updateJson', this.tree))
       .then(pkgJsons => this.timedStage('buildTree', this.tree, pkgJsons))
       .then(() => this.timedStage('garbageCollect', this.tree))
-      .then(() => this.timedStage('runScript', 'prepublish', this.pkg, prefix))
-      .then(() => this.timedStage('runScript', 'prepare', this.pkg, prefix))
+      .then(() => this.timedStage('runScript', 'prepublish', this.pkg, this.prefix))
+      .then(() => this.timedStage('runScript', 'prepare', this.pkg, this.prefix))
       .then(() => this.timedStage('teardown'))
       .then(() => {
         this.runTime = Date.now() - this.startTime

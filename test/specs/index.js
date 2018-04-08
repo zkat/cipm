@@ -20,6 +20,9 @@ const pkgVersion = '1.0.0'
 const writeEnvScript = process.platform === 'win32'
   ? 'echo %npm_lifecycle_event% > %npm_lifecycle_event%'
   : 'echo $npm_lifecycle_event > $npm_lifecycle_event'
+const binarySuffix = process.platform === 'win32'
+  ? '.exe'
+  : ''
 
 const prefix = require('../lib/test-dir')(__filename)
 
@@ -648,6 +651,78 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
     t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'postinstall'))
     t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'prepublish'))
     t.ok(fixtureHelper.missing(path.join(prefix, 'node_modules', 'a'), 'prepare'))
+
+    fixtureHelper.teardown()
+    console.log = originalConsoleLog
+  })
+})
+
+test('adds install script when binding.gyp is present', t => {
+  const originalConsoleLog = console.log
+  console.log = () => {}
+
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: {
+        a: '^1',
+        b: '^1'
+      }
+    }),
+    'package-lock.json': File({
+      dependencies: {
+        a: { version: '1.0.0' },
+        b: { version: '1.0.0' }
+      },
+      lockfileVersion: 1
+    })
+  }))
+  fixture.create(prefix)
+
+  extract = (name, child, childPath, opts) => {
+    const pkg = (child.name === 'a')
+      ? {
+        name: 'a',
+        version: '1.0.0'
+      }
+      : {
+        name: 'b',
+        version: '1.0.0',
+        scripts: {
+          install: 'exit 0'
+        }
+      }
+    const files = new Tacks(Dir({
+      'package.json': File(pkg),
+      'binding.gyp': File({
+        'targets': [
+          {
+            'target_name': 'hello',
+            'type': 'executable',
+            'sources': [
+              'hello.cc'
+            ]
+          }
+        ]
+      }),
+      'hello.cc': File(
+        '#include <iostream>\n' +
+        'int main() {\n' +
+        'std::cout << "hello";\n' +
+        'return 0;\n' +
+        '}\n'
+      )
+    }))
+    files.create(childPath)
+  }
+
+  return run().then(details => {
+    t.equal(details.pkgCount, 2)
+    t.ok(fs.statSync(path.join(prefix, 'node_modules', 'a', 'build', 'Release', 'hello' + binarySuffix)), 'dep a binary is built')
+    t.throws(() => {
+      fs.statSync(path.join(prefix, 'node_modules', 'b', 'build', 'Release', 'hello' + binarySuffix))
+    }, 'dep b binary is not built')
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog

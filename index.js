@@ -15,6 +15,7 @@ const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
 
+const readdirAsync = BB.promisify(fs.readdir)
 const readFileAsync = BB.promisify(fs.readFile)
 const statAsync = BB.promisify(fs.stat)
 const symlinkAsync = BB.promisify(fs.symlink)
@@ -120,7 +121,9 @@ class Installer {
         )
         return BB.join(
           this.checkLock(),
-          stat && rimraf(path.join(this.prefix, 'node_modules'))
+          stat && readdirAsync(path.join(this.prefix, 'node_modules')).then(children =>
+            BB.join(children.map(child => rimraf(path.join(this.prefix, 'node_modules', child))))
+          )
         )
       }).then(() => {
       // This needs to happen -after- we've done checkLock()

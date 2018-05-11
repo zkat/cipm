@@ -14,6 +14,7 @@ const npa = require('npm-package-arg')
 const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
+const checkPlatform = BB.promisify(require('npm-install-checks').checkPlatform)
 
 const readFileAsync = BB.promisify(fs.readFile)
 const statAsync = BB.promisify(fs.stat)
@@ -317,17 +318,21 @@ class Installer {
 
   updateInstallScript (dep, pkg) {
     const depPath = dep.path(this.prefix)
-    return statAsync(path.join(depPath, 'binding.gyp'))
-      .catch(err => { if (err.code !== 'ENOENT') { throw err } })
-      .then(stat => {
-        if (stat) {
-          if (!pkg.scripts) {
-            pkg.scripts = {}
-          }
-          pkg.scripts.install = 'node-gyp rebuild'
-        }
+    return checkPlatform(pkg, this.config.get('force'))
+      .then(() => {
+        return statAsync(path.join(depPath, 'binding.gyp'))
+          .catch(err => { if (err.code !== 'ENOENT') { throw err } })
+          .then(stat => {
+            if (stat) {
+              if (!pkg.scripts) {
+                pkg.scripts = {}
+              }
+              pkg.scripts.install = 'node-gyp rebuild'
+            }
+          })
+          .then(pkg)
       })
-      .then(pkg)
+      .catch(() => 'ignore')
   }
 
   // A cute little mark-and-sweep collector!

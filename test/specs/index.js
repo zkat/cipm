@@ -667,13 +667,15 @@ test('adds install script when binding.gyp is present', t => {
       version: pkgVersion,
       dependencies: {
         a: '^1',
-        b: '^1'
+        b: '^1',
+        c: '^1'
       }
     }),
     'package-lock.json': File({
       dependencies: {
         a: { version: '1.0.0' },
-        b: { version: '1.0.0' }
+        b: { version: '1.0.0' },
+        c: { version: '1.0.0' }
       },
       lockfileVersion: 1
     })
@@ -686,13 +688,20 @@ test('adds install script when binding.gyp is present', t => {
         name: 'a',
         version: '1.0.0'
       }
-      : {
-        name: 'b',
-        version: '1.0.0',
-        scripts: {
-          install: 'exit 0'
+      : (child.name === 'b')
+        ? {
+          name: 'b',
+          version: '1.0.0',
+          scripts: {
+            install: 'exit 0'
+          }
         }
-      }
+        : {
+          name: 'c',
+          version: '1.0.0',
+          os: ['fake-os']
+        }
+
     const files = new Tacks(Dir({
       'package.json': File(pkg),
       'binding.gyp': File({
@@ -718,11 +727,14 @@ test('adds install script when binding.gyp is present', t => {
   }
 
   return run().then(details => {
-    t.equal(details.pkgCount, 2)
+    t.equal(details.pkgCount, 3)
     t.ok(fs.statSync(path.join(prefix, 'node_modules', 'a', 'build', 'Release', 'hello' + binarySuffix)), 'dep a binary is built')
     t.throws(() => {
       fs.statSync(path.join(prefix, 'node_modules', 'b', 'build', 'Release', 'hello' + binarySuffix))
     }, 'dep b binary is not built')
+    t.throws(() => {
+      fs.statSync(path.join(prefix, 'node_modules', 'c', 'build', 'Release', 'hello' + binarySuffix))
+    }, 'dep c binary is not built')
 
     fixtureHelper.teardown()
     console.log = originalConsoleLog

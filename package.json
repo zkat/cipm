@@ -13,6 +13,7 @@
     "pretest": "standard",
     "release": "standard-version -s",
     "test": "tap -J --nyc-arg=--all --coverage test/specs",
+    "test:debug": "tap --only --node-arg=--inspect-brk=9229 --timeout=9999 test/specs/index.js",
     "update-coc": "weallbehave -o . && git add CODE_OF_CONDUCT.md && git commit -m 'docs(coc): updated CODE_OF_CONDUCT.md'",
     "update-contrib": "weallcontribute -o . && git add CONTRIBUTING.md && git commit -m 'docs(contributing): updated CONTRIBUTING.md'"
   },

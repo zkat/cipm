@@ -10,6 +10,7 @@ const path = require('path')
 const requireInject = require('require-inject')
 const Tacks = require('tacks')
 const test = require('tap').test
+const only = require('tap').only
 
 const Dir = Tacks.Dir
 const File = Tacks.File
@@ -657,7 +658,7 @@ test('skips lifecycle scripts with ignoreScripts is set', t => {
   })
 })
 
-test('adds install script when binding.gyp is present', t => {
+only('adds install script when binding.gyp is present', t => {
   const originalConsoleLog = console.log
   console.log = () => {}
 

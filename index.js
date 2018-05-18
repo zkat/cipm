@@ -14,6 +14,7 @@ const npa = require('npm-package-arg')
 const path = require('path')
 const readPkgJson = BB.promisify(require('read-package-json'))
 const rimraf = BB.promisify(require('rimraf'))
+const checkPlatform = require('npm-install-checks').checkPlatform
 
 const readFileAsync = BB.promisify(fs.readFile)
 const statAsync = BB.promisify(fs.stat)
@@ -215,7 +216,7 @@ class Installer {
       .then(() => cg.finish())
   }
 
-  checkDepEnv (dep) {
+  checkDepEnv (dep, pkg) {
     const includeDev = (
       // Covers --dev and --development (from npm config itself)
       this.config.get('dev') ||
@@ -227,7 +228,8 @@ class Installer {
       /^dev(elopment)?$/.test(this.config.get('also'))
     )
     const includeProd = !/^dev(elopment)?$/.test(this.config.get('only'))
-    return (dep.dev && includeDev) || (!dep.dev && includeProd)
+    const isSupportedPlatform = !pkg || checkPlatformSync(pkg, this.config.get('force'))
+    return ((dep.dev && includeDev) || (!dep.dev && includeProd)) && isSupportedPlatform
   }
 
   updateJson (tree) {
@@ -255,10 +257,10 @@ class Installer {
   buildTree (tree, pkgJsons) {
     this.log.verbose('buildTree', 'finalizing tree and running scripts')
     return tree.forEachAsync((dep, next) => {
-      if (!this.checkDepEnv(dep)) { return }
+      const pkg = pkgJsons.get(dep)
+      if (!this.checkDepEnv(dep, pkg)) { return }
       const spec = npa.resolve(dep.name, dep.version)
       const depPath = dep.path(this.prefix)
-      const pkg = pkgJsons.get(dep)
       this.log.silly('buildTree', `linking ${spec}`)
       return this.runScript('preinstall', pkg, depPath)
         .then(next) // build children between preinstall and binLink
@@ -399,4 +401,12 @@ function readJson (jsonPath, name, ignoreMissing) {
         throw err
       }
     })
+}
+
+function checkPlatformSync (pkg, force) {
+  let result
+  checkPlatform(pkg, force, err => {
+    result = !err
+  })
+  return result
 }

@@ -30,19 +30,19 @@
   },
   "license": "MIT",
   "dependencies": {
-    "bin-links": "^1.1.0",
+    "bin-links": "^1.1.2",
     "bluebird": "^3.5.1",
     "find-npm-prefix": "^1.0.2",
     "graceful-fs": "^4.1.11",
-    "lock-verify": "^2.0.0",
-    "npm-lifecycle": "^2.0.0",
+    "lock-verify": "^2.0.2",
+    "npm-lifecycle": "^2.0.3",
     "npm-logical-tree": "^1.2.1",
-    "npm-package-arg": "^6.0.0",
-    "pacote": "^7.5.1",
+    "npm-package-arg": "^6.1.0",
+    "pacote": "^8.1.6",
     "protoduck": "^5.0.0",
-    "read-package-json": "^2.0.12",
+    "read-package-json": "^2.0.13",
     "rimraf": "^2.6.2",
-    "worker-farm": "^1.5.4"
+    "worker-farm": "^1.6.0"
   },
   "devDependencies": {
     "mkdirp": "^0.5.1",

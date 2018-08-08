@@ -275,6 +275,79 @@ test('installs `directory` dependencies as symlinks', t => {
     .then(data => t.equal(data, '"hello"', 'extracted data matches'))
 })
 
+test('installs recursive `directory` dependencies as symlinks', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: {
+        'a': 'file:a'
+      }
+    }),
+    'package-lock.json': File({
+      name: pkgName,
+      verson: pkgVersion,
+      requires: true,
+      dependencies: {
+        a: {
+          version: 'file:a',
+          requires: {
+            b: 'file:b'
+          },
+          dependencies: {
+            b: {
+              version: 'file:b',
+              bundled: true
+            }
+          }
+        }
+      },
+      lockfileVersion: 1
+    }),
+    'a': Dir({
+      'package.json': File({
+        name: 'a',
+        version: '1.2.3',
+        dependencies: {
+          b: 'file:../b'
+        }
+      }),
+      'index.js': File('"hello a"')
+    }),
+    'b': Dir({
+      'package.json': File({
+        name: 'b',
+        version: '1.2.3'
+      }),
+      'index.js': File('"hello b"')
+    })
+  }))
+  fixture.create(prefix)
+
+  const modPathA = path.join(prefix, 'node_modules', 'a')
+  const modPathB = path.join(prefix, 'node_modules', 'a', 'node_modules', 'b')
+  return run().then(details => {
+    t.equal(details.pkgCount, 2)
+    return fs.lstatAsync(modPathA)
+  })
+    .then(stat => t.ok(stat.isSymbolicLink(), '`a` is a symlink'))
+
+    .then(() => fs.realpathAsync(modPathA))
+    .then(realpath => t.equal(realpath, path.join(prefix, 'a'), 'realpath ok'))
+
+    .then(() => fs.readFileAsync(path.join(modPathA, 'index.js'), 'utf8'))
+    .then(data => t.equal(data, '"hello a"', 'extracted data matches'))
+
+    .then(() => fs.lstatAsync(modPathB))
+    .then(stat => t.ok(stat.isSymbolicLink(), '`b` is a symlink'))
+
+    .then(() => fs.realpathAsync(modPathB))
+    .then(realpath => t.equal(realpath, path.join(prefix, 'b'), 'realpath ok'))
+
+    .then(() => fs.readFileAsync(path.join(modPathB, 'index.js'), 'utf8'))
+    .then(data => t.equal(data, '"hello b"', 'extracted data matches'))
+})
+
 test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
   const fixture = new Tacks(Dir({
     'package.json': File({

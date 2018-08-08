@@ -19,6 +19,7 @@ const readFileAsync = BB.promisify(fs.readFile)
 const statAsync = BB.promisify(fs.stat)
 const symlinkAsync = BB.promisify(fs.symlink)
 const writeFileAsync = BB.promisify(fs.writeFile)
+const realpathAsync = BB.promisify(fs.realpath)
 
 class Installer {
   constructor (opts) {
@@ -175,13 +176,24 @@ class Installer {
       if (dep.isRoot) {
         return next()
       } else if (spec.type === 'directory') {
-        const relative = path.relative(path.dirname(depPath), spec.fetchSpec)
         this.log.silly('extractTree', `${dep.name}@${spec.fetchSpec} -> ${depPath} (symlink)`)
+        const makeSymlink = () => {
+          if (process.platform === 'win32') {
+            const relative = path.relative(path.dirname(depPath), spec.fetchSpec)
+            return symlinkAsync(relative, depPath, 'junction')
+          } else {
+            return Promise.all([realpathAsync(path.dirname(depPath)), realpathAsync(spec.fetchSpec)])
+              .then(([realDependencyPath, realFetchSpec]) => {
+                const relative = path.relative(realDependencyPath, realFetchSpec)
+                return symlinkAsync(relative, depPath, 'junction')
+              })
+          }
+        }
         return mkdirp(path.dirname(depPath))
-          .then(() => symlinkAsync(relative, depPath, 'junction'))
+          .then(() => makeSymlink())
           .catch(
             () => rimraf(depPath)
-              .then(() => symlinkAsync(relative, depPath, 'junction'))
+              .then(() => makeSymlink())
           ).then(() => next())
           .then(() => {
             this.pkgCount++

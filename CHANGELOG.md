@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.0.1"></a>
+## [3.0.1](https://github.com/zkat/cipm/compare/v3.0.0...v3.0.1) (2018-08-31)
+
+
+### Bug Fixes
+
+* **workers:** disable workers for now ([64db490](https://github.com/zkat/cipm/commit/64db490))
+
+
+
 <a name="3.0.0"></a>
 # [3.0.0](https://github.com/zkat/cipm/compare/v2.0.2...v3.0.0) (2018-08-31)
 

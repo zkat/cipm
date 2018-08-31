@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.0.0"></a>
+# [3.0.0](https://github.com/zkat/cipm/compare/v2.0.2...v3.0.0) (2018-08-31)
+
+
+### Features
+
+* **config:** switch to modern, figgy-pudding configuration ([#57](https://github.com/zkat/cipm/issues/57)) ([161f6b2](https://github.com/zkat/cipm/commit/161f6b2))
+
+
+### BREAKING CHANGES
+
+* **config:** this updates cipm to use pacote@9, which consumes npm-style config objects, not pacoteOpts()-style objects.
+
+
+
 <a name="2.0.2"></a>
 ## [2.0.2](https://github.com/zkat/cipm/compare/v2.0.1...v2.0.2) (2018-08-10)
 

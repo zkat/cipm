@@ -2,7 +2,6 @@
 
 const BB = require('bluebird')
 
-const npmConfig = require('../../lib/config/npm-config.js')
 const npmlog = require('npmlog')
 const fixtureHelper = require('../lib/fixtureHelper.js')
 const fs = BB.promisifyAll(require('fs'))
@@ -37,15 +36,13 @@ const Installer = requireInject('../../index.js', {
 })
 
 function run (moreOpts) {
-  return new Installer({
+  return new Installer(Object.assign({
     log: npmlog,
-    config: npmConfig.fromObject(Object.assign({}, {
-      global: true,
-      prefix,
-      'unsafe-perm': true, // this is the default when running non-root
-      loglevel: process.env.LOGLEVEL || 'error'
-    }, moreOpts || {}))
-  }).run()
+    global: true,
+    prefix,
+    'unsafe-perm': true, // this is the default when running non-root
+    loglevel: process.env.LOGLEVEL || 'error'
+  }, moreOpts || {})).run()
 }
 
 test('throws error when no package.json is found', t => {

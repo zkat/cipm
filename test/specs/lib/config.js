@@ -56,19 +56,12 @@ test('config: errors if npm errors for any reason', t => {
 test('config: parses configs from npm', t => {
   cleanup()
 
-  const expectedConfig = { a: 1, b: 2 }
-
-  config().then(config => {
-    const objConf = {}
-    for (const k of config.keys()) {
-      objConf[k] = config.get(k)
-    }
-    t.deepEqual(objConf, expectedConfig, 'configs match')
-    t.end()
-  })
-
-  child.stdout.emit('data', JSON.stringify(expectedConfig))
+  const c = config()
+  child.stdout.emit('data', JSON.stringify({cache: 'foo'}))
   child.emit('close', 0)
+  return c.then(config => {
+    t.match(config.cache, /^foo[/\\]_cacache$/, 'configs match')
+  })
 })
 
 test('config: cleanup', t => {

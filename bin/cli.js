@@ -17,11 +17,8 @@ function cliMain () {
   const log = require('npmlog')
   return fromNpm(process.argv)
     .then(c => {
-      log.level = c.get('loglevel')
-      return new Installer({
-        config: c,
-        log
-      })
+      log.level = c.loglevel
+      return new Installer(c.concat({log}))
     })
     .then(cipm => cipm.run())
     .then(

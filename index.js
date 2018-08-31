@@ -25,6 +25,7 @@ const CipmOpts = figgyPudding({
   also: {},
   dev: 'development',
   development: {},
+  dirPacker: {},
   force: {},
   global: {},
   ignoreScripts: 'ignore-scripts',
@@ -238,7 +239,7 @@ class Installer {
               return next()
             } else {
               return BB.resolve(extract.child(
-                dep.name, dep, depPath, this.config, this.opts
+                dep.name, dep, depPath, this.opts
               ))
                 .then(() => cg.completeWork(1))
                 .then(() => { this.pkgCount++ })

@@ -127,6 +127,45 @@ test('handles empty dependency list', t => {
   })
 })
 
+test('deletes node_modules/ contents, without deleting node_modules/ itself', t => {
+  const fixture = new Tacks(Dir({
+    'node_modules': Dir({
+      'stale-dependency': Dir({
+        'package.json': File({
+          name: 'stale-dependency',
+          version: '1.0.0'
+        })
+      })
+    }),
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion
+    }),
+    'package-lock.json': File({
+      dependencies: {},
+      lockfileVersion: 1
+    })
+  }))
+  fixture.create(prefix)
+
+  let notNodeModulesDeleted = true
+  const nodeModulesDir = path.join(prefix, 'node_modules')
+  const watcher = fs.watch(nodeModulesDir, () => {
+    if (!fs.existsSync(nodeModulesDir)) {
+      notNodeModulesDeleted = false
+    }
+  })
+
+  return run().then(() => {
+    t.ok(
+      !fs.existsSync(path.join(nodeModulesDir, 'stale-dependency')),
+      'node_modules/ contents were deleted'
+    )
+    watcher.close()
+    t.ok(notNodeModulesDeleted, 'node_modules/ itself was not deleted')
+  })
+})
+
 test('handles dependency list with only shallow subdeps', t => {
   const fixture = new Tacks(Dir({
     'package.json': File({

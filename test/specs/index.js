@@ -229,6 +229,53 @@ test('handles dependency list with only deep subdeps', t => {
   })
 })
 
+test('installs root package no matter the config', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      devDependencies: {
+        a: '^1'
+      }
+    }),
+    'package-lock.json': File({
+      dependencies: {
+        a: {
+          version: '1.1.1',
+          dev: true
+        }
+      },
+      lockfileVersion: 1
+    })
+  }))
+  fixture.create(prefix)
+
+  const aContents = 'var a = 1;'
+
+  extract = (name, child, childPath, opts) => {
+    const files = new Tacks(Dir({
+      'package.json': File({
+        name: name,
+        version: child.version
+      }),
+      'index.js': File(aContents)
+    }))
+    files.create(childPath)
+  }
+
+  return run({
+    only: 'dev'
+  }).then(details => {
+    t.equal(details.pkgCount, 1)
+    return fs.readFileAsync(
+      path.join(prefix, 'node_modules', 'a', 'index.js'),
+      'utf8'
+    ).then((a) => {
+      t.equal(a, aContents, 'dev dep extracted correctly')
+    })
+  })
+})
+
 test('installs `directory` dependencies as symlinks', t => {
   const fixture = new Tacks(Dir({
     'package.json': File({

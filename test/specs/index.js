@@ -91,6 +91,38 @@ test('throws error when package.json and package-lock.json do not match', t => {
   })
 })
 
+test('keeps node_modules when package.json and package-lock.json do not match', t => {
+  const aContents = 'var a = 1;'
+
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: { a: '1' }, // should generate error
+      optionalDependencies: { b: '2' } // should generate warning
+    }),
+    'package-lock.json': File({
+      version: pkgVersion + '-0',
+      dependencies: {},
+      lockfileVersion: 1
+    }),
+    'node_modules': Dir({
+      'a': Dir({
+        'index.js': File(aContents)
+      })
+    })
+  }))
+  fixture.create(prefix)
+
+  return run().catch(err => {
+    t.match(err.message, 'cipm can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync')
+    const filePath = path.join(prefix, 'node_modules', 'a', 'index.js')
+    return fs.readFileAsync(filePath, 'utf8')
+  }).then(extractedContents => {
+    t.equal(extractedContents, aContents, 'node_modules exist')
+  })
+})
+
 test('throws error when old shrinkwrap is found', t => {
   const fixture = new Tacks(Dir({
     'package.json': File({

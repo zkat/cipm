@@ -275,7 +275,7 @@ class Installer {
       const depPath = dep.path(this.prefix)
       return next()
         .then(() => readJson(depPath, 'package.json'))
-        .then(pkg => (spec.registry || spec.type === 'directory')
+        .then(pkg => spec.type === 'directory'
           ? pkg
           : this.updateFromField(dep, pkg).then(() => pkg)
         )
@@ -339,6 +339,11 @@ class Installer {
     const depPath = dep.path(this.prefix)
     const depPkgPath = path.join(depPath, 'package.json')
     const parent = dep.requiredBy.values().next().value
+
+    if (!parent) {
+      return Promise.resolve(pkg)
+    }
+
     return readJson(parent.path(this.prefix), 'package.json')
       .then(ppkg =>
         (ppkg.dependencies && ppkg.dependencies[dep.name]) ||
@@ -346,9 +351,14 @@ class Installer {
       (ppkg.optionalDependencies && ppkg.optionalDependencies[dep.name])
       )
       .then(from => npa.resolve(dep.name, from))
-      .then(from => { pkg._from = from.toString() })
-      .then(() => writeFileAsync(depPkgPath, JSON.stringify(pkg, null, 2)))
-      .then(() => pkg)
+      .then(from => {
+        if (from.type !== 'version') {
+          pkg._from = from.toString()
+          return writeFileAsync(depPkgPath, JSON.stringify(pkg, null, 2)).then(pkg)
+        } else {
+          return pkg
+        }
+      })
   }
 
   updateInstallScript (dep, pkg) {

@@ -272,6 +272,53 @@ test('installs `directory` dependencies as symlinks', t => {
     .then(data => t.equal(data, '"hello"', 'extracted data matches'))
 })
 
+test('creates valid `_from` entries for registry ranges and tags', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: {
+        a: '^1',
+        b: 'latest'
+      }
+    }),
+    'package-lock.json': File({
+      name: pkgName,
+      verson: pkgVersion,
+      dependencies: {
+        a: {
+          version: '1.1.1'
+        },
+        b: {
+          version: '1.1.1'
+        }
+      },
+      lockfileVersion: 1
+    })
+  }))
+  fixture.create(prefix)
+
+  extract = (name, child, childPath, opts) => {
+    const files = new Tacks(Dir({
+      'package.json': File({
+        name: child.name,
+        version: child.version
+      })
+    }))
+    files.create(childPath)
+  }
+
+  return run().then(details => {
+    t.equal(details.pkgCount, 2)
+    return Promise.all(['a', 'b'].map(pkg =>
+      fs.readFileAsync(path.join(prefix, 'node_modules', pkg, 'package.json'), 'utf8')))
+  }).then(pkgs => {
+    const [a, b] = pkgs.map(JSON.parse)
+    t.equal(a._from, 'a@^1', '`a` version matches')
+    t.equal(b._from, 'b@latest', '`b` version matches')
+  })
+})
+
 test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
   const fixture = new Tacks(Dir({
     'package.json': File({
@@ -316,7 +363,8 @@ test('prioritizes npm-shrinkwrap over package-lock if both present', t => {
   }).then(pkgJson => {
     t.deepEqual(JSON.parse(pkgJson), {
       name: 'a',
-      version: '1.1.1'
+      version: '1.1.1',
+      _from: 'a@^1'
     }, 'uses version from npm-shrinkwrap')
   })
 })

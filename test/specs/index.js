@@ -532,6 +532,43 @@ test('removes failed optional dependencies', t => {
   })
 })
 
+test('don\'t install optional dependencies with no-optional argument', t => {
+  const fixture = new Tacks(Dir({
+    'package.json': File({
+      name: pkgName,
+      version: pkgVersion,
+      dependencies: { a: '^1' },
+      optionalDependencies: { b: '^1' }
+    }),
+    'package-lock.json': File({
+      lockfileVersion: 1,
+      dependencies: {
+        a: { version: '1.0.0' },
+        b: { version: '1.0.0', optional: true }
+      }
+    })
+  }))
+  fixture.create(prefix)
+
+  extract = (name, child, childPath, opts) => {
+    const files = new Tacks(Dir({
+      'package.json': File({
+        name,
+        version: '1.0.0'
+      })
+    }))
+    files.create(childPath)
+  }
+
+  return run({ optional: false }).then(details => {
+    t.equal(details.pkgCount, 1, 'only prod deps counted')
+    t.ok(fs.statSync(path.join(prefix, 'node_modules', 'a')), 'dep a is there')
+    t.throws(() => {
+      fs.statSync(path.join(prefix, 'node_modules', 'b'))
+    }, 'optional dep b is not there')
+  })
+})
+
 test('runs lifecycle hooks of packages with env variables', t => {
   const originalConsoleLog = console.log
   console.log = () => {}

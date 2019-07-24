@@ -33,6 +33,7 @@ const CipmOpts = figgyPudding({
   log: {},
   loglevel: {},
   only: {},
+  optional: { default: true },
   prefix: {},
   prod: 'production',
   production: {},
@@ -263,7 +264,10 @@ class Installer {
       /^dev(elopment)?$/.test(this.opts.also)
     )
     const includeProd = !/^dev(elopment)?$/.test(this.opts.only)
-    return (dep.dev && includeDev) || (!dep.dev && includeProd)
+    const includeOptional = includeProd && this.opts.optional
+    return (dep.dev && includeDev) ||
+      (dep.optional && includeOptional) ||
+      (!dep.dev && !dep.optional && includeProd)
   }
 
   updateJson (tree) {

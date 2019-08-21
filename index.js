@@ -252,6 +252,7 @@ class Installer {
   }
 
   checkDepEnv (dep) {
+    if (dep.isRoot) { return true }
     const includeDev = (
       // Covers --dev and --development (from npm config itself)
       this.opts.dev ||
